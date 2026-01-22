@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 import base64
 import re
-from ecdsa import SigningKey, VerifyingKey
-from ecdsa.util import sigencode_der
+# from ecdsa import SigningKey, VerifyingKey
+# from ecdsa.util import sigencode_der
 
 
 class ExchangeWrapper(ABC):
