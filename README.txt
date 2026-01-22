@@ -1,3 +1,9 @@
+PRIORITY update 1/22 21:00
+>>>>>MUST UPDATE ENTIRE CODE TO USE DECIMALS FOR ANYTHING THAT HAS TO DO WITH MONEY!<<<<
+
+THIS STEP MUST BE DONE FIRST BEFORE MOVING FORWARD!
+
+
 update 1/22
 need to rebuild focusing on FUNCTION : PROFITS : FEES
 need to adapt and work well in both HIGH and LOW latencies without abusing webskt/REST thresholds
