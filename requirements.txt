@@ -26,3 +26,7 @@ python-binance>=1.0.19
 krakenex>=2.1.0
 coinbase>=2.1.0
 asyncio>=3.4.3
+
+binance-connector-python
+coinbase-advanced-py
+python-kraken-sdk
