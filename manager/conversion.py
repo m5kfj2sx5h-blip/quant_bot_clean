@@ -8,7 +8,6 @@
 # originally triangular.py # needs to be redone from scratch 
 Triangular arbitrage detector
 """
-import json
 import itertools
 import logging
 
@@ -24,13 +23,13 @@ def detect_triangle(books, min_prof=0.08):
     """
     out = []
     for ex in books:
-    for p in PATHS:
-    try:
-    a = float(books[ex][f'{p[1]}-{p[0]}']['asks'][0][0])   # USD→BTC
-    b = float(books[ex][f'{p[2]}-{p[1]}']['asks'][0][0])   # BTC→ETH
-    c = float(books[ex][f'{p[0]}-{p[2]}']['bids'][0][0])   # ETH→USD
-    prof = (1/a * 1/b * c - 1) * 100
-    if prof > min_prof:
-        out.append({'ex':ex, 'path':p, 'prof_pct':prof})
-    except: continue
-return sorted(out, key=lambda x: x['prof_pct'], reverse=True)
+        for p in PATHS:
+            try:
+                a = float(books[ex][f'{p[1]}-{p[0]}']['asks'][0][0])   # USD→BTC
+                b = float(books[ex][f'{p[2]}-{p[1]}']['asks'][0][0])   # BTC→ETH
+                c = float(books[ex][f'{p[0]}-{p[2]}']['bids'][0][0])   # ETH→USD
+                prof = (1/a * 1/b * c - 1) * 100
+                if prof > min_prof:
+                    out.append({'ex':ex, 'path':p, 'prof_pct':prof})
+                except: continue
+        return sorted(out, key=lambda x: x['prof_pct'], reverse=True)
