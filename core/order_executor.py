@@ -39,15 +39,15 @@ class OrderExecutor:
         self.total_trades = 0
         self.successful_trades = 0
         self.failed_trades = 0
-        self.total_profit = 0.0
-        self.total_loss = 0.0
+        self.total_profit = Decimal('0.0')
+        self.total_loss = Decimal('0.0')
 
         self.logger.info("✅ Order executor initialized")
 
     def execute_arbitrage(self, buy_exchange: str, sell_exchange: str,
-                          buy_price: float, sell_price: float,
-                          symbol: str, position_size: float,
-                          expected_profit: float,
+                          buy_price: Decimal, sell_price: Decimal,
+                          symbol: str, position_size: Decimal,
+                          expected_profit: Decimal,
                           trade_params: Optional[Dict] = None) -> bool:
         """
         Execute an arbitrage trade with dynamic position sizing.
@@ -414,7 +414,7 @@ class OrderExecutor:
         self.total_trades = 0
         self.successful_trades = 0
         self.failed_trades = 0
-        self.total_profit = 0.0
-        self.total_loss = 0.0
+        self.total_profit = Decimal('0.0')
+        self.total_loss = Decimal('0.0')
         self.execution_history = []
         self.logger.info("📊 Execution metrics reset")
