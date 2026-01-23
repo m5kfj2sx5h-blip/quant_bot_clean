@@ -73,11 +73,11 @@ class AuctionContextModule:
                               f"Confidence: {context.execution_confidence:.2f}")
 
         except Exception as e:
-            self.logger.error(f"Auction analysis error: {e}")
+            self.logger.error(f"❌ Auction analysis error: {e}")
 
         return context
 
-    def limit_chase(book, side, size, max_slip=0.02):
+    def limit_chase(book, side, size, max_slip=Decimal('0.02')):
         """Walk the book until size filled without exceeding max_slip.
 
         Returns dict {'price': float, 'qty': float, 'slip_pct': float} or None if cannot fill.
