@@ -391,29 +391,40 @@ class ArbitrageAnalyzer:
         opportunities.sort(key=lambda x: x.estimated_profit, reverse=True)
         
         return opportunities[:10]  # Return top 10 opportunities
-    
-    def _get_trading_parameters(self) -> Dict:
-        """Get trading parameters adjusted for capital mode."""
+
+    def get_trading_parameters(self) -> Dict:
         params = {
-            'min_spread': 0.08,  # 0.08% minimum spread
-            'min_profit_usd': self.config.get('min_profit_threshold', 0.5),
-            'confidence_base': 0.5,
-            'position_size_usd': self._calculate_dynamic_position_size()
+            'position_size_pct': Decimal('0.5'),
+            'stop_loss_pct': Decimal('0.02'),
+            'take_profit_pct': Decimal('0.05'),
+            'max_slippage_pct': Decimal('0.01'),
+            'retry_delay': 30  # seconds, not money
         }
-        
-        # Adjust for capital mode
-        if self.capital_mode == 'BOTTLENECKED':
-            # More conservative in bottleneck mode
-            params['min_spread'] *= 1.2
-            params['min_profit_usd'] *= 1.3
-            params['confidence_base'] *= 0.8
-        elif self.capital_mode == 'BALANCED':
-            # Can be more aggressive in balanced mode
-            params['min_spread'] *= 0.9
-            params['confidence_base'] *= 1.1
-        
+
+        if self.context['volatility'] == 'HIGH':
+            params['position_size_pct'] *= Decimal('0.5')
+            params['stop_loss_pct'] *= Decimal('1.5')
+            params['max_slippage_pct'] *= Decimal('1.5')
+        elif self.context['volatility'] == 'LOW':
+            params['position_size_pct'] *= Decimal('1.5')
+            params['stop_loss_pct'] *= Decimal('0.8')
+
+        if self.context['liquidity'] == 'LOW':
+            params['max_slippage_pct'] *= Decimal('2')
+            params['position_size_pct'] *= Decimal('0.5')
+
+        if self.context['trend'] == 'BULLISH':
+            params['take_profit_pct'] *= Decimal('1.2')
+        elif self.context['trend'] == 'BEARISH':
+            params['stop_loss_pct'] *= Decimal('0.8')
+
+        if self.context['market_sentiment'] == 'POSITIVE':
+            params['position_size_pct'] *= Decimal('1.1')
+        elif self.context['market_sentiment'] == 'NEGATIVE':
+            params['position_size_pct'] *= Decimal('0.9')
+
         return params
-    
+
     def _calculate_dynamic_position_size(self) -> float:
         """Calculate dynamic position size based on capital mode and available capital."""
         try:
