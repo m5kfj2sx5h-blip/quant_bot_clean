@@ -17,9 +17,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from apscheduler.schedulers.background import BackgroundScheduler
 from decimal import Decimal
 from adapters.exchanges.kraken import KrakenAdapter
-from adapters.exchanges.wrappers import ExchangeWrapper
-
-
+from adapters.exchanges.wrappers import ExchangeWrapper(ABC):
   # For general if needed
 
 log = logging.getLogger('macro')
@@ -89,12 +87,11 @@ class MacroServer:
         cold = os.getenv('COLD_PAXG')
         for ex in ['binance', 'kraken']:
             try:
-                exchange = ExchangeWrapper
+                exchange = ExchangeWrapper(ABC):
 
-
-(ex)  # Revised - use base for general xfer
-                exchange.xfer_paxg(gold_amt / Decimal('2'), cold)
+    (ex)  # Revised - use base for general xfer
+            exchange.xfer_paxg(gold_amt / Decimal('2'), cold)
             except Exception:
-                pass
+        pass
         json.dump({'profit_usd': Decimal('0')}, open(profit_file, 'w'))
         log.info(f'💰 SWEEP {gold_amt.quantize(Decimal('0.0000'))} PAXG to cold wallet')

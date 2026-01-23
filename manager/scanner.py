@@ -320,43 +320,20 @@ class MarketContext:
 
         return params
 
-class ArbitrageAnalyzer:
-    """
-    Simple arbitrage analyzer
-    """
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.opportunities: List[Dict] = []
-
-    def analyze_opportunities(self, opportunities: List[Dict]) -> List[Dict]:
-        """Analyze arbitrage opportunities"""
-        analyzed = []
-        for opp in opportunities:
-            score = opp['spread'] * (Decimal('1') / opp['volatility']) * (opp['cvd'] / Decimal('1000')) * opp[
-                'imbalance']
-            analyzed.append({**opp, 'score': score})
-        return sorted(analyzed, key=lambda x: x['score'], reverse=True)
-
-    def get_best_opportunity(self, opportunities: List[Dict], min_score: Decimal = Decimal('0.5')) -> Optional[Dict]:
-        analyzed = self.analyze_opportunities(opportunities)
-        if analyzed and analyzed[0]['score'] > min_score:
-            return analyzed[0]
-        return None
-
 @dataclass
 class ArbitrageOpportunity:
     """Represents an arbitrage opportunity."""
     symbol: str
     buy_exchange: str
     sell_exchange: str
-    buy_price: float
-    sell_price: float
-    spread_percentage: float
-    estimated_profit: float
-    confidence: float
-    timestamp: float
+    buy_price: Decimal
+    sell_price: Decimal
+    spread_percentage: Decimal
+    estimated_profit: Decimal
+    confidence: Decimal
+    timestamp: float  # Time, keep float
     capital_mode: str = "BALANCED"
-    position_size_usd: float = 1000.0
+    position_size_usd: Decimal = Decimal('1000.0')
 
 class ArbitrageAnalyzer:
     """Advanced arbitrage opportunity analyzer."""
