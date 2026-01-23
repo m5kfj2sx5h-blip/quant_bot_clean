@@ -1,13 +1,16 @@
-""" STAKING MANAGER V 3.0.0 :
-        - Advanced Dynamic Staking - fetches best APRs per exchange
-        - Stakes Alpha bot's Idle money between BUY/SELL signals
-        - Stakes 100% of idle Alpha capital in mix crypto/stable
-        - Reserves last 2 positions in stable highest APR per account, buy if not held).
-        """
+#!/usr/bin/env python3
+"""
+STAKING MANAGER
+Version: 3.0.0
+Description: Advanced Dynamic Staking - fetches best APRs per exchange, Stakes 100% of idle Alpha capital
+
+Author: |\/|||
+"""
+
 import logging
 from decimal import Decimal
-import ccxt  # For dynamic APR
-from core.order_executor import OrderExecutor  # For buy if not held
+import ccxt
+from core.order_executor import OrderExecutor
 
 class StakingManager:
     def __init__(self, exchanges, config):
@@ -27,8 +30,7 @@ class StakingManager:
         aprs = {}
         try:
             coingecko = ccxt.coingecko()
-            markets = coingecko.fetch_markets(params={'vs_currency': 'usd', 'order': 'staking_apy_desc', 'per_page': 50,
-                                                      'page': 1})  # Fetch top 50 by APY
+            markets = coingecko.fetch_markets(params={'vs_currency': 'usd', 'order': 'staking_apy_desc', 'per_page': 50, 'page': 1})  # Fetch top 50 by APY
             for m in markets:
                 coin = m['id']
                 apr = Decimal(str(m.get('staking_apy', 0.0)))
@@ -53,12 +55,11 @@ class StakingManager:
                     self.logger.info(f"✅ Fetched APR for {coin}: {max_apr}% on {best_exchange} (bond: {bond_days} days)")
         except Exception as e:
             self.logger.error(f"⚠️ APR fetch failed: {e}—fallback to config")
-            aprs = {coin: {'apr': Decimal(str(self.config['staking']['aprs'][coin])), 'bond_days': Decimal('0'),
-                           'exchange': 'binanceus'} for coin in self.config['staking']['coins']}
+            aprs = {coin: {'apr': Decimal(str(self.config['staking']['aprs'][coin])), 'bond_days': Decimal('0'), 'exchange': 'binanceus'} for coin in self.config['staking']['coins']}
         return aprs
 
     def stake(self, coin, amount: Decimal):
-        if coin not in self.coins:
+        if coin not in self.aprs:
             self.logger.error(f"⚠️ Invalid coin for staking: {coin}")
             return False
         if len(self.staked) >= self.slots:
@@ -67,19 +68,16 @@ class StakingManager:
 
         # Buy if not held
         ex = self.exchanges[self.aprs[coin]['exchange']]
-        held = ex.fetch_balance().get(coin, Decimal('0'))
+        held = Decimal(str(ex.fetch_balance().get(coin, 0)))
         if held < amount:
             buy_amount = amount - held
-            self.order_executor.execute_arbitrage(buy_exchange=ex.name, sell_exchange=None, buy_price=...,
-                                                  symbol=coin + '/USDT', position_size=buy_amount,
-                                                  expected_profit=Decimal('0'))  # Buy market/limit
-            self.logger.info(f"✅ Bought {buy_amount.quantize(Decimal('0.00'))} {coin} for staking on {ex.name}")
+            self.order_executor.execute_arbitrage(buy_exchange=ex.name, sell_exchange=None, buy_price=... , symbol=coin + '/USDT', position_size=buy_amount, expected_profit=Decimal('0'))  # Buy
+            self.logger.info(f"💰 Bought {buy_amount.quantize(Decimal('0.00'))} {coin} for staking on {ex.name}")
 
         try:
             ex.stake(coin, str(amount))  # SDK/ccxt method
             self.staked[coin] = amount
-            self.logger.info(
-                f"Staked {amount.quantize(Decimal('0.00'))} {coin} on {self.aprs[coin]['exchange']} at {self.aprs[coin]['apr']}% APR")
+            self.logger.info(f"✅ Staked {amount.quantize(Decimal('0.00'))} {coin} on {self.aprs[coin]['exchange']} at {self.aprs[coin]['apr']}% APR (bond: {self.aprs[coin]['bond_days']} days)")
             return True
         except Exception as e:
             self.logger.error(f"❌ Staking failed: {e}")
@@ -94,7 +92,7 @@ class StakingManager:
         per_stake = idle_amount / Decimal(stake_count)
         for coin, info in sorted_aprs:
             if len(self.staked) < self.slots:
-                if high_idle or from_signals:  # Long-term for high-idle/signals
+                if high_idle:  # Long-term for high-idle/signals
                     if info['bond_days'] > self.min_bond_long:
                         self.stake(coin, per_stake)
                 else:  # Short-term for remaining/empty
@@ -109,10 +107,8 @@ class StakingManager:
             self.stake(coin, stake_amount)
 
     def unstake(self, coin, amount: Decimal = None):
-        def unstake(self, coin, amount: Decimal = None):
-        # Unstake short-term first on signal
         if coin not in self.staked:
-            self.logger.error(f"No staking for {coin}")
+            self.logger.error(f"⚠️ No staking for {coin}")
             return False
         amount = amount or self.staked[coin]
         ex = self.exchanges[self.aprs[coin]['exchange']]
@@ -123,9 +119,7 @@ class StakingManager:
                 del self.staked[coin]
             self.logger.info(f"✅ Unstaked {amount.quantize(Decimal('0.00'))} {coin} from {self.aprs[coin]['exchange']}")
             # Sell if needed (e.g., on signal)
-            self.order_executor.execute_arbitrage(sell_exchange=ex.name, buy_exchange=None, sell_price=...,
-                                                  symbol=coin + '/USDT', position_size=amount,
-                                                  expected_profit=Decimal('0'))  # Sell time-sensitive
+            self.order_executor.execute_arbitrage(sell_exchange=ex.name, buy_exchange=None, sell_price=... , symbol=coin + '/USDT', position_size=amount, expected_profit=Decimal('0'))  # Sell time-sensitive
             return True
         except Exception as e:
             self.logger.error(f"❌ Unstaking failed: {e}")
