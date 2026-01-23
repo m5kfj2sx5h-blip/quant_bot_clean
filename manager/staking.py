@@ -1,8 +1,9 @@
 import requests
 import logging
 from decimal import Decimal
-import ccxt  # For dynamic APR fetch
+import ccxt  # For dynamic APR
 import os
+from core.order_executor import OrderExecutor  # For buy if not held
 
 class StakingManager:
     def __init__(self, exchanges, config):
@@ -11,8 +12,9 @@ class StakingManager:
         self.coins = self.config['staking']['coins']
         self.slots = self.config['staking']['slots']
         self.staked = {}
-        self.aprs = self._get_aprs()  # Dynamic fetch
+        self.aprs = self._get_aprs()  # Dynamic
         self.latency_mode = os.getenv('LATENCY_MODE', 'laptop').lower()
+        self.order_executor = OrderExecutor()  # For buy
         self.logger = logging.getLogger(__name__)
 
     def _get_aprs(self):
@@ -40,7 +42,7 @@ class StakingManager:
                 except:
                     continue
             aprs[coin] = {'apr': max_apr, 'exchange': best_exchange}
-            self.logger.info(f"Best APR for {coin}: {max_apr}% on {best_exchange}")
+            self.logger.info(f"💰 Best APR for {coin}: {max_apr}% on {best_exchange}")
         return aprs
 
     def stake(self, coin, amount: Decimal):
@@ -51,13 +53,21 @@ class StakingManager:
             self.logger.error("⚠️ No staking slots available")
             return False
 
-        # Find best exchange for coin
+        # Buy if not held
         ex = self.exchanges[self.aprs[coin]['exchange']]
+        held = ex.fetch_balance().get(coin, Decimal('0'))
+        if held < amount:
+            buy_amount = amount - held
+            self.order_executor.execute_arbitrage(buy_exchange=ex.name, sell_exchange=None, buy_price=...,
+                                                  symbol=coin + '/USDT', position_size=buy_amount,
+                                                  expected_profit=Decimal('0'))  # Buy market/limit
+            self.logger.info(f"✅ Bought {buy_amount.quantize(Decimal('0.00'))} {coin} for staking on {ex.name}")
+
         try:
             ex.stake(coin, str(amount))  # SDK/ccxt method
             self.staked[coin] = amount
             self.logger.info(
-                f"✅ Staked {amount.quantize(Decimal('0.00'))} {coin} on {self.aprs[coin]['exchange']} at {self.aprs[coin]['apr']}% APR")
+                f"Staked {amount.quantize(Decimal('0.00'))} {coin} on {self.aprs[coin]['exchange']} at {self.aprs[coin]['apr']}% APR")
             return True
         except Exception as e:
             self.logger.error(f"❌ Staking failed: {e}")
@@ -77,7 +87,6 @@ class StakingManager:
                 break
             stake_amount = amount / Decimal(len(self.coins))
             self.stake(coin, stake_amount)
-
 
     def stake_coin(self, ex, coin, amount):
         if ex.id == 'kraken':
