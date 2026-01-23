@@ -1,38 +1,56 @@
-import requests
+""" STAKING MANAGER V 3.0.0 :
+        - Advanced Dynamic Staking - fetches best APRs per exchange
+        - Stakes Alpha bot's x6 BUY positions
+        - Stakes Alpha bot's Idle money between BUY/SELL signals
+        """
+
 import logging
 from decimal import Decimal
 import ccxt  # For dynamic APR
-import os
 from core.order_executor import OrderExecutor  # For buy if not held
+
 
 class StakingManager:
     def __init__(self, exchanges, config):
         self.exchanges = exchanges
         self.config = config
-        self.coins = self.config['staking']['coins']
+        self.min_apr = self.config.get('staking', {}).get('min_apr', Decimal('1.0'))  # User config
+        self.min_rank = self.config.get('staking', {}).get('min_rank', 100)  # User config for safety
         self.slots = self.config['staking']['slots']
         self.staked = {}
-        self.aprs = self._get_aprs()                # Dynamic
-        self.order_executor = OrderExecutor()       # For buy/sell
-        self.buffer_pct = Decimal('0.20')           # 20% idle buffer for buys
+        self.aprs = self._get_aprs()  # Dynamic
+        self.order_executor = OrderExecutor()  # For buy/sell
         self.logger = logging.getLogger(__name__)
 
     def _get_aprs(self):
         aprs = {}
-        for coin in self.coins:
-            max_apr = Decimal('0.0')
-            best_exchange = None
-            for name, ex in self.exchanges.items():
-                try:
-                    staking_info = ccxt[name]().fetch_staking_rewards()  # ccxt or SDK
-                    apr = Decimal(str(staking_info.get(coin, {}).get('apr', 0.0)))
-                    if apr > max_apr:
-                        max_apr = apr
-                        best_exchange = name
-                except:
-                    continue
-            aprs[coin] = {'apr': max_apr, 'exchange': best_exchange}
-            self.logger.info(f"💰 Best APR for {coin}: {max_apr}% on {best_exchange}")
+        try:
+            coingecko = ccxt.coingecko()
+            markets = coingecko.fetch_markets(params={'vs_currency': 'usd', 'order': 'staking_apy_desc', 'per_page': 50,
+                                                      'page': 1})  # Fetch top 50 by APY
+            for m in markets:
+                coin = m['id']
+                apr = Decimal(str(m.get('staking_apy', 0.0)))
+                if apr < self.min_apr or m.get('market_cap_rank', 1000) > self.min_rank:
+                    continue  # Filter low APY/presales (high rank = low cap)
+                best_exchange = None
+                max_apr = apr  # Base from CoinGecko
+                for name, ex in self.exchanges.items():
+                    try:
+                        staking_info = ex.fetch_staking_rewards()
+                        exchange_apr = Decimal(str(staking_info.get(coin, {}).get('apr', 0.0)))
+                        if exchange_apr > max_apr:
+                            max_apr = exchange_apr
+                            best_exchange = name
+                    except:
+                        continue
+                if best_exchange:
+                    aprs[coin] = {'apr': max_apr, 'exchange': best_exchange}
+                    self.logger.info(f"Fetched APR for {coin}: {max_apr}% on {best_exchange}")
+        except Exception as e:
+            self.logger.error(f"APR fetch failed: {e}—fallback to config")
+            aprs = {coin: Decimal(str(self.config['staking']['aprs'][coin])) for coin in
+                    self.config['staking']['coins']}
         return aprs
 
     def stake(self, coin, amount: Decimal):
@@ -63,15 +81,14 @@ class StakingManager:
             self.logger.error(f"❌ Staking failed: {e}")
             return False
 
-    def find_best_seat_warmers(self, idle_amount: Decimal, from_signals: bool = False):
-        """Find highest APR coins/exchanges for idle/empty positions, stake (buy if not held)."""
+    def find_best_seat_warmers(self, idle_amount: Decimal):
+        """Stake 100% idle in multiple highest APR dynamic coins/exchanges (buy if not held)."""
         sorted_aprs = sorted(self.aprs.items(), key=lambda x: x[1]['apr'], reverse=True)
+        stake_count = min(len(sorted_aprs), self.slots - len(self.staked))
+        per_stake = idle_amount / Decimal(stake_count) if stake_count > 0 else Decimal('0.0')
         for coin, info in sorted_aprs:
             if len(self.staked) < self.slots:
-                stake_amount = idle_amount * (
-                    Decimal('0.80') if from_signals else Decimal('1.0'))  # Buffer 20% for signals buys
-                self.stake(coin, stake_amount)
-                break
+                self.stake(coin, per_stake)
 
     def allocate(self, amount: Decimal):
         for coin in self.coins:
