@@ -1,6 +1,13 @@
+#!/usr/bin/env python3
 """
-Main orchestration - Q-Bot gets dedicated thread, never blocked
+MAIN ORCHESTRATOR
+Version: 3.0.0
+Description: Directs all operations, (Q-Bot gets dedicated thread, never blocked).
+
+Author: |\/|||
 """
+
+
 import asyncio
 import json
 import logging
@@ -73,10 +80,10 @@ class QBotDedicatedThread:
             loop.run_until_complete(self.q_bot.run_arbitrage_cycle())
 
         except Exception as e:
-            logger.critical(f"Q-BOT FATAL ERROR: {e}", exc_info=True)
+            logger.critical(f"❌ Q-BOT FATAL ERROR: {e}", exc_info=True)
             # Restart Q-Bot if it crashes
             if self.is_running:
-                logger.critical("Restarting Q-Bot...")
+                logger.critical("⚠️ Restarting Q-Bot...")
                 self._run_qbot_loop()
 
     def stop(self):

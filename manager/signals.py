@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+"""
+MACRO SIGNAL RECEIVER
+Version: 3.0.0
+Description: Input for All TradingView Signals
+
+Author: |\/|||
+"""
+
 import json
 import logging
 import hmac
@@ -6,6 +15,12 @@ import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from apscheduler.schedulers.background import BackgroundScheduler
+from decimal import Decimal
+from adapters.exchanges.kraken import KrakenAdapter
+from adapters.exchanges.wrappers import ExchangeWrapper
+
+
+  # For general if needed
 
 log = logging.getLogger('macro')
 SCHED = BackgroundScheduler()
@@ -38,6 +53,7 @@ class MacroHandler(BaseHTTPRequestHandler):
 class MacroServer:
     def __init__(self, callback):
         self.callback = callback
+        self.latency_mode = os.getenv('LATENCY_MODE', 'laptop').lower()
         self.start_webhook()
         self.start_scheduler()
 
@@ -45,35 +61,40 @@ class MacroServer:
         server = HTTPServer(('0.0.0.0', 8090), MacroHandler)
         server.quant_callback = self.callback
         threading.Thread(target=server.serve_forever, daemon=True).start()
-        log.info('Macro webhook listening on :8090/macro')
+        log.info('📡 Macro webhook listening on :8090/macro')
 
     def start_scheduler(self):
-        # nightly 00:05 book-keeping
-        SCHED.add_job(self.gold_sweep, 'cron', hour=0, minute=5)
+        # nightly 00:05 book-keeping, adaptive interval for latency
+        interval = 300 if self.latency_mode == 'laptop' else 60  # Longer for high latency
+        SCHED.add_job(self.gold_sweep, 'interval', seconds=interval)
         SCHED.start()
 
     def gold_sweep(self):
-        from manager.exchange import exchange
+        kraken = KrakenAdapter()
         try:
-            kraken = exchange('kraken')
-            paxg_price = float(kraken.book('PAXG-USD')['bids'][0][0])
+            paxg_price = Decimal(str(kraken.book('PAXG-USD')['bids'][0][0]))
         except Exception:
             return
         profit_file = 'logs/cycle_profit.json'
         if not os.path.exists(profit_file):
             return
         try:
-            profit = json.load(open(profit_file)).get('profit_usd', 0)
+            profit = json.load(open(profit_file)).get('profit_usd', Decimal('0'))
+            profit = Decimal(str(profit))
         except Exception:
             return
-        if profit <= 0:
+        if profit <= Decimal('0'):
             return
-        gold_amt = (profit * 0.15) / paxg_price
+        gold_amt = (profit * Decimal('0.15')) / paxg_price
         cold = os.getenv('COLD_PAXG')
         for ex in ['binance', 'kraken']:
             try:
-                exchange(ex).xfer_paxg(gold_amt/2, cold)
+                exchange = ExchangeWrapper
+
+
+(ex)  # Revised - use base for general xfer
+                exchange.xfer_paxg(gold_amt / Decimal('2'), cold)
             except Exception:
                 pass
-        json.dump({'profit_usd': 0}, open(profit_file, 'w'))
-        log.info(f'SWEEP {gold_amt:.4f} PAXG to cold wallet')
+        json.dump({'profit_usd': Decimal('0')}, open(profit_file, 'w'))
+        log.info(f'💰 SWEEP {gold_amt.quantize(Decimal('0.0000'))} PAXG to cold wallet')

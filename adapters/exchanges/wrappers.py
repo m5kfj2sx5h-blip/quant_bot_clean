@@ -1,10 +1,12 @@
-# File: wrappers.py
-# Create this file in your QUANT_bot directory
+#!/usr/bin/env python3
+"""
+EXCHANGE WRAPPERS MODULE
+Version: 3.0.0
+Description: Provides unified interfaces for ALL exchanges
 
+Author: |\/|||
 """
-Exchange Wrappers Module
-Provides unified interfaces for different cryptocurrency exchanges
-"""
+
 import ccxt
 import logger
 import logging
