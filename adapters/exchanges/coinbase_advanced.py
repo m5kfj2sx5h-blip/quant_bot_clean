@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 import os
 import base64
 import re
-from exchanges.base import ExchangeAdapter
 
 load_dotenv()
 
@@ -24,42 +23,53 @@ class CoinbaseAdvancedAdapter:
         return base64.b64decode(key_data)
 
     def __init__(self):
-        api_key = os.getenv('COINBASEADV_KEY')
-        api_secret = os.getenv('COINBASEADV_SECRET')
+        api_key = os.getenv('COINBASE_ADVANCED_API_KEY')
+        api_secret = os.getenv('COINBASE_ADVANCED_API_SECRET')
         parsed_secret = self._parse_pem_key(api_secret)
         self.client = CoinbaseAdvancedClient(api_key=api_key, api_secret=base64.b64encode(parsed_secret).decode())
 
     def get_name(self) -> str:
         return "coinbase_advanced"
 
-    async def get_balance(self, asset: str) -> Decimal:
-        balance = await self.client.fetch_balance()
-        return Decimal(balance.get(asset.upper(), {}).get('free', '0'))
+    def get_balance(self, asset: str) -> Decimal:
+        accounts = self.client.get_accounts()
+        for acc in accounts:
+            if acc.currency == asset.upper():
+                return Decimal(acc.available_balance.value)
+        return Decimal('0')
 
-    async def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
-        book = await self.client.fetch_order_book(str(symbol).replace('/', '-'), limit)
+    def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
+        product_id = str(symbol).replace('/', '-')
+        book = self.client.get_product_book(product_id=product_id, limit=limit)
         return {
-            'bids': [{ 'price': Decimal(p[0]), 'amount': Decimal(p[1]) } for p in book['bids']],
-            'asks': [{ 'price': Decimal(p[0]), 'amount': Decimal(p[1]) } for p in book['asks']]
+            'bids': [{'price': Decimal(p.price), 'amount': Decimal(p.size)} for p in book.pricebook.bids],
+            'asks': [{'price': Decimal(p.price), 'amount': Decimal(p.size)} for p in book.pricebook.asks]
         }
 
-    async def get_ticker_price(self, symbol: Symbol) -> Price:
-        ticker = await self.client.fetch_ticker(str(symbol).replace('/', '-'))
-        return Price(Decimal(ticker['last']))
+    def get_ticker_price(self, symbol: Symbol) -> Price:
+        product_id = str(symbol).replace('/', '-')
+        ticker = self.client.get_product(product_id=product_id)
+        return Price(Decimal(ticker.price))
 
-    async def place_order(self, symbol: Symbol, side: str, amount: Amount, price: Optional[Price] = None) -> Dict:
-        params = {}
-        return await self.client.create_order(
-            str(symbol).replace('/', '-'), 'limit' if price else 'market', side, float(amount), float(price) if price else None, params
-        )
+    def place_order(self, symbol: Symbol, side: str, amount: Amount, price: Optional[Price] = None) -> Dict:
+        product_id = str(symbol).replace('/', '-')
+        order_type = 'LIMIT_ORDER' if price else 'MARKET_ORDER'
+        params = {
+            'product_id': product_id,
+            'side': side.upper(),
+            'base_size': str(amount)
+        }
+        if price:
+            params['limit_price'] = str(price)
+        return self.client.place_order(order_configuration={order_type.lower(): params})
 
-    async def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
+    def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
         try:
-            await self.client.cancel_order(order_id, str(symbol).replace('/', '-'))
+            self.client.cancel_orders([order_id])
             return True
         except:
             return False
 
     def get_supported_pairs(self) -> List[Symbol]:
-        markets = self.client.load_markets()
-        return [Symbol(pair.replace('-', '/')) for pair in markets if 'USDT' in pair or 'USDC' in pair or 'USD' in pair]  # Prioritizes USDT/USDC
+        products = self.client.get_products()
+        return [Symbol(p.base_currency + '/' + p.quote_currency) for p in products if p.status == 'online' and ('USDT' in p.quote_currency or 'USDC' in p.quote_currency or 'USD' in p.quote_currency)]

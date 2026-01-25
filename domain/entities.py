@@ -1,22 +1,16 @@
-"""
-Core domain entities - pure business logic, no infrastructure
-"""
 from dataclasses import dataclass, field
 from enum import Enum
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-
 class TradingMode(Enum):
     BTC_MODE = "btc_mode"
     GOLD_MODE = "gold_mode"
 
-
 class OrderSide(Enum):
     BUY = "buy"
     SELL = "sell"
-
 
 class OrderStatus(Enum):
     PENDING = "pending"
@@ -24,7 +18,6 @@ class OrderStatus(Enum):
     CLOSED = "closed"
     CANCELED = "canceled"
     FAILED = "failed"
-
 
 @dataclass(frozen=True)
 class Symbol:
@@ -38,7 +31,6 @@ class Symbol:
     def __str__(self):
         return self.symbol
 
-
 @dataclass
 class Balance:
     currency: str
@@ -49,7 +41,6 @@ class Balance:
     @property
     def available_for_trading(self) -> Decimal:
         return self.free
-
 
 @dataclass
 class Order:
@@ -72,7 +63,6 @@ class Order:
     def remaining(self) -> Decimal:
         return self.amount - self.filled
 
-
 @dataclass
 class ArbitrageOpportunity:
     symbol: Symbol
@@ -87,13 +77,11 @@ class ArbitrageOpportunity:
 
     @property
     def is_profitable(self) -> bool:
-        return self.profit_usd > 0 and self.profit_percent > Decimal('0.5')  # 0.5% minimum
+        return self.profit_usd > 0 and self.profit_percent > Decimal('0.5')
 
     @property
     def profit_after_fees(self) -> Decimal:
-        # Will be calculated by fee manager
         return self.profit_usd
-
 
 @dataclass
 class MacroSignal:
@@ -104,8 +92,7 @@ class MacroSignal:
 
     def is_valid(self) -> bool:
         age = datetime.utcnow() - self.timestamp
-        return age.seconds < 3600  # Valid for 1 hour
-
+        return age.seconds < 3600
 
 @dataclass
 class TradingThresholds:
@@ -117,3 +104,23 @@ class TradingThresholds:
 
     def can_take_position(self, position_usd: Decimal) -> bool:
         return position_usd <= self.max_position_size_usd
+
+@dataclass
+class FeeStructure:
+    exchange: str
+    maker_fee: Decimal = Decimal('0.001')
+    taker_fee: Decimal = Decimal('0.001')
+    bnb_discount: bool = False
+    bnb_discount_pct: Decimal = Decimal('0.25')
+    zero_fee_allowance: Decimal = Decimal('0')
+    zero_fee_remaining: Decimal = Decimal('0')
+    preferred_stablecoin: str = 'USDT'
+    stablecoin_yield_pct: Decimal = Decimal('0')
+
+    def get_effective_fee(self, is_maker: bool = False, use_bnb: bool = False) -> Decimal:
+        base_fee = self.maker_fee if is_maker else self.taker_fee
+        if self.zero_fee_remaining > 0:
+            return Decimal('0')
+        if use_bnb and self.bnb_discount:
+            return base_fee * (1 - self.bnb_discount_pct)
+        return base_fee

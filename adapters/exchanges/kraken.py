@@ -2,7 +2,6 @@ from kraken.spot import Spot as KrakenSpot
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
 from domain.entities import Price, Amount, Symbol
-
 from dotenv import load_dotenv
 import os
 
@@ -10,45 +9,42 @@ load_dotenv()
 
 class KrakenAdapter:
     def __init__(self):
-        api_key = os.getenv('KRAKEN_KEY')
-        api_secret = os.getenv('KRAKEN_SECRET')
+        api_key = os.getenv('KRAKEN_API_KEY')
+        api_secret = os.getenv('KRAKEN_API_SECRET')
         self.client = KrakenSpot(key=api_key, secret=api_secret)
 
     def get_name(self) -> str:
         return "kraken"
 
-    async def get_balance(self, asset: str) -> Decimal:
-        balance = self.client.query_private('Balance')
-        return Decimal(balance['result'].get(asset.upper(), '0'))
+    def get_balance(self, asset: str) -> Decimal:
+        balance = self.client.balance()
+        return Decimal(balance.get(asset.upper(), '0'))
 
-    async def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
-        book = self.client.query_public('Depth', {'pair': str(symbol).replace('/', ''), 'count': limit})
-        pair_key = list(book['result'].keys())[0]
+    def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
+        pair = str(symbol).replace('/', '')
+        book = self.client.market_depth(pair=pair, count=limit)
         return {
-            'bids': [{ 'price': Decimal(p[0]), 'amount': Decimal(p[1]) } for p in book['result'][pair_key]['bids']],
-            'asks': [{ 'price': Decimal(p[0]), 'amount': Decimal(p[1]) } for p in book['result'][pair_key]['asks']]
+            'bids': [{'price': Decimal(p[0]), 'amount': Decimal(p[1])} for p in book['bids']],
+            'asks': [{'price': Decimal(p[0]), 'amount': Decimal(p[1])} for p in book['asks']]
         }
 
-    async def get_ticker_price(self, symbol: Symbol) -> Price:
-        ticker = self.client.query_public('Ticker', {'pair': str(symbol).replace('/', '')})
-        pair_key = list(ticker['result'].keys())[0]
-        return Price(Decimal(ticker['result'][pair_key]['c'][0]))
+    def get_ticker_price(self, symbol: Symbol) -> Price:
+        pair = str(symbol).replace('/', '')
+        ticker = self.client.ticker(pair=pair)
+        return Price(Decimal(ticker['c'][0]))
 
-    async def place_order(self, symbol: Symbol, side: str, amount: Amount, price: Optional[Price] = None) -> Dict:
+    def place_order(self, symbol: Symbol, side: str, amount: Amount, price: Optional[Price] = None) -> Dict:
+        pair = str(symbol).replace('/', '')
         order_type = 'limit' if price else 'market'
-        resp = self.client.query_private('AddOrder', {
-            'pair': str(symbol).replace('/', ''),
-            'type': side,
-            'ordertype': order_type,
-            'volume': str(amount),
-            'price': str(price) if price else None
-        })
-        return {'id': resp['result']['txid'][0] if 'txid' in resp['result'] else None}
+        return self.client.create_order(pair=pair, type=side.lower(), ordertype=order_type, volume=str(amount), price=str(price) if price else None)
 
-    async def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
-        resp = self.client.query_private('CancelOrder', {'txid': order_id})
-        return 'result' in resp and resp['result'].get('count', 0) > 0
+    def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
+        try:
+            self.client.cancel_order(txid=order_id)
+            return True
+        except:
+            return False
 
     def get_supported_pairs(self) -> List[Symbol]:
-        pairs = self.client.query_public('AssetPairs')['result']
-        return [Symbol(key.replace('XXBT', 'BTC').replace('XETH', 'ETH').replace('ZUSD', 'USD').replace('.', '/')) for key in pairs.keys()]  # Includes USDT/USDC if supported
+        pairs = self.client.asset_pairs()
+        return [Symbol(key.replace('XXBT', 'BTC').replace('XETH', 'ETH').replace('ZUSD', 'USD').replace('.', '/')) for key in pairs]

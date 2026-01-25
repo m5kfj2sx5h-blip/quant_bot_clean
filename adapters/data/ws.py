@@ -9,6 +9,7 @@ from coinbase.advanced.client import AdvancedTradeClient as CoinbaseAdvancedClie
 
 load_dotenv()
 
+
 class BinanceUSWebSocket:
     def __init__(self, symbol: str = "btcusdt"):
         self.uri = f"wss://stream.binance.us:9443/ws/{symbol}@depth@100ms/{symbol}@trade"

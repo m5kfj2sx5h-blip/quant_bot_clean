@@ -1,4 +1,3 @@
-import ccxt.async_support as ccxt
 from binance.spot import Spot as BinanceSpot
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
@@ -17,37 +16,43 @@ class BinanceUSAdapter:
     def get_name(self) -> str:
         return "binanceus"
 
-    async def get_balance(self, asset: str) -> Decimal:
-        balance = await self.client.fetch_balance()
-        return Decimal(balance.get(asset.upper(), {}).get('free', '0'))
+    def get_balance(self, asset: str) -> Decimal:
+        balance = self.client.account()['balances']
+        for b in balance:
+            if b['asset'] == asset.upper():
+                return Decimal(b['free'])
+        return Decimal('0')
 
-    async def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
-        book = await self.client.fetch_order_book(str(symbol).replace('/', ''), limit)
+    def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
+        book = self.client.depth(str(symbol).replace('/', ''), limit=limit)
         return {
             'bids': [{'price': Decimal(p[0]), 'amount': Decimal(p[1])} for p in book['bids']],
             'asks': [{'price': Decimal(p[0]), 'amount': Decimal(p[1])} for p in book['asks']]
         }
 
-    async def get_ticker_price(self, symbol: Symbol) -> Price:
-        ticker = await self.client.fetch_ticker(str(symbol).replace('/', ''))
-        return Price(Decimal(ticker['last']))
+    def get_ticker_price(self, symbol: Symbol) -> Price:
+        ticker = self.client.ticker_price(str(symbol).replace('/', ''))
+        return Price(Decimal(ticker['price']))
 
-    async def place_order(self, symbol: Symbol, side: str, amount: Amount,
-                            price: Optional[Price] = None) -> Dict:
-        params = {'timeInForce': 'GTC'} if price else {}
-        return await self.client.create_order(
-            str(symbol).replace('/', ''), 'limit' if price else 'market', side, float(amount),
-            float(price) if price else None, params
-        )
+    def place_order(self, symbol: Symbol, side: str, amount: Amount, price: Optional[Price] = None) -> Dict:
+        params = {
+            'symbol': str(symbol).replace('/', ''),
+            'side': side.upper(),
+            'type': 'LIMIT' if price else 'MARKET',
+            'quantity': str(amount)
+        }
+        if price:
+            params['price'] = str(price)
+            params['timeInForce'] = 'GTC'
+        return self.client.new_order(**params)
 
-    async def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
+    def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
         try:
-            await self.client.cancel_order(order_id, str(symbol).replace('/', ''))
+            self.client.cancel_order(str(symbol).replace('/', ''), orderId=order_id)
             return True
         except:
             return False
 
     def get_supported_pairs(self) -> List[Symbol]:
-        markets = self.client.load_markets()
-        return [Symbol(pair) for pair in markets if
-                'USDT' in pair or 'USDC' in pair or 'USD' in pair]  # Prioritizes USDT/USDC
+        exchange_info = self.client.exchange_info()
+        return [Symbol(s['baseAsset'] + '/' + s['quoteAsset']) for s in exchange_info['symbols'] if s['status'] == 'TRADING' and ('USDT' in s['quoteAsset'] or 'USDC' in s['quoteAsset'] or 'USD' in s['quoteAsset'])]
