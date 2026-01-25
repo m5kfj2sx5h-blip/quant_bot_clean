@@ -12,14 +12,25 @@
     "gbot_pct": {
       "BTC": 0,
       "GOLD": 85
+    },
+    "qbot_internal_split": {
+      "cross_exchange": 80,
+      "triangular": 20
     }
   },
   "risk": {
     "max_trade_usd": 500,
     "min_spread_pct": 0.08,
     "max_slip_pct": 0.02,
-    "max_daily_paxg_withdraw_usd": 5000,
+    "depth_multiplier_min": 2.5,
+    "depth_multiplier_max": 5.0,
+    "volatility_slowdown_multiplier": 2.0,
     "silent_fail_retry": 3
+  },
+  "thresholds": {
+    "baseline_profit_pct": 0.5,
+    "dynamic_min_pct": 0.4,
+    "dynamic_max_pct": 1.0
   },
   "auction": {
     "micro_timing_threshold": 0.7,
@@ -27,29 +38,74 @@
   },
   "staking": {
     "slots": 6,
-    "target_coins": [
-      "ADA",
-      "ETH",
-      "SOL",
-      "DOT",
-      "ATOM"
-    ]
+    "target_coins": ["ADA", "ETH", "SOL", "DOT", "ATOM"],
+    "seat_warmer_empty_threshold": 3,
+    "seat_warmer_full_threshold": 2
+  },
+  "gold": {
+    "sweep_profit_pct": 15,
+    "max_sweeps_per_month": 2,
+    "sell_on_mode_flip_pct": 85,
+    "keep_forever_pct": 15
+  },
+  "drift": {
+    "threshold_laptop_pct": 15,
+    "threshold_vps_pct": 10,
+    "min_transfer_usd": 500
   },
   "exchanges": {
-    "binance": {
-      "fee": 0.001,
-      "bnb_rebate": true
+    "binanceus": {
+      "maker_fee": 0.001,
+      "taker_fee": 0.001,
+      "bnb_discount_pct": 25,
+      "min_bnb_balance": 0.05,
+      "preferred_stablecoin": "USDT",
+      "stablecoin_yield_pct": 0
     },
     "kraken": {
-      "fee": 0.0000,
-      "free_monthly": 10000,
-      "subscription": 50
+      "maker_fee": 0.0016,
+      "taker_fee": 0.0026,
+      "zero_fee_monthly_usd": 10000,
+      "subscription_cost_usd": 50,
+      "preferred_stablecoin": "USDC",
+      "stablecoin_yield_pct": 4.0
     },
     "coinbase": {
-      "fee": 0.0000,
-      "free_monthly": 500,
-      "subscription": 50,
-      "usdc_apr": 3.5
+      "maker_fee": 0.004,
+      "taker_fee": 0.006,
+      "zero_fee_monthly_usd": 500,
+      "subscription_cost_usd": 50,
+      "preferred_stablecoin": "USDC",
+      "stablecoin_yield_pct": 4.5
+    },
+    "coinbase_advanced": {
+      "maker_fee": 0.004,
+      "taker_fee": 0.006,
+      "zero_fee_monthly_usd": 0,
+      "preferred_stablecoin": "USDC",
+      "stablecoin_yield_pct": 4.5
     }
+  },
+  "networks": {
+    "preferred_order": ["tron", "solana", "polygon", "base", "bsc"],
+    "avoid": ["ethereum"],
+    "max_fee_usd": 1.0,
+    "max_time_minutes": 5
+  },
+  "cycle_times": {
+    "qbot_cross_exchange_sec": 10,
+    "qbot_triangular_sec": 30,
+    "abot_sec": 60,
+    "gbot_sec": 300,
+    "money_manager_sec": 180,
+    "health_check_sec": 60
+  },
+  "pairs": {
+    "arbitrage": [
+      "BTC/USDT", "BTC/USDC", "BTC/USD",
+      "ETH/USDT", "ETH/USDC", "ETH/USD",
+      "SOL/USDT", "SOL/USDC", "SOL/USD"
+    ],
+    "gold": ["PAXG/USDT", "PAXG/USDC", "PAXG/USD"]
   }
 }

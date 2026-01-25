@@ -2,11 +2,9 @@
 """
 MACRO SIGNAL RECEIVER
 Version: 3.0.0
-Description: Input for All TradingView Signals
-
+Description: Input for All TradingView Signals (MACRO and A-Bot sniper signals)
 Author: |\/|||
 """
-
 import json
 import logging
 import hmac
@@ -14,84 +12,136 @@ import hashlib
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from apscheduler.schedulers.background import BackgroundScheduler
 from decimal import Decimal
-from adapters.exchanges.kraken import KrakenAdapter
-from adapters.exchanges.wrappers import ExchangeWrapper(ABC):
-  # For general if needed
+from typing import Callable, Optional, Dict
 
-log = logging.getLogger('macro')
-SCHED = BackgroundScheduler()
+logger = logging.getLogger(__name__)
+
 
 class MacroHandler(BaseHTTPRequestHandler):
+    """HTTP handler for TradingView webhook signals"""
+    
     def do_POST(self):
-        if self.path != '/macro':
-            return
-        length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(length)
-        secret = os.getenv('TV_SECRET')
+        """Handle incoming POST requests from TradingView"""
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        # Verify signature if secret is set
+        secret = os.getenv('WEBHOOK_PASSPHRASE', '')
         if secret:
-            sig = hmac.new(secret.encode(), post_data, hashlib.sha256).hexdigest()
-            if self.headers.get('X-TV-Signature') != sig:
+            expected_sig = hmac.new(secret.encode(), post_data, hashlib.sha256).hexdigest()
+            received_sig = self.headers.get('X-TV-Signature', '')
+            if received_sig and received_sig != expected_sig:
+                logger.warning("⚠️ Invalid webhook signature received")
+                self.send_response(401)
+                self.end_headers()
                 return
+        
         try:
-            data = json.loads(post_data)
-            mode = data.get('mode', 'BTC').upper()
-            # forward to server callback
-            if hasattr(self.server, 'quant_callback') and callable(self.server.quant_callback):
-                self.server.quant_callback(mode)
-        except Exception:
-            pass
-        self.send_response(200)
-        self.end_headers()
-
+            data = json.loads(post_data.decode('utf-8'))
+            logger.info(f"📡 Received signal: {data}")
+            
+            # Route signal to appropriate handler
+            if hasattr(self.server, 'signal_callback') and callable(self.server.signal_callback):
+                self.server.signal_callback(data)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'received'}).encode())
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Invalid JSON in webhook: {e}")
+            self.send_response(400)
+            self.end_headers()
+        except Exception as e:
+            logger.error(f"❌ Error processing webhook: {e}")
+            self.send_response(500)
+            self.end_headers()
+    
     def log_message(self, fmt, *args):
-        return  # silence default logging
-
-class MacroServer:
-    def __init__(self, callback):
-        self.callback = callback
-        self.latency_mode = os.getenv('LATENCY_MODE', 'laptop').lower()
-        self.start_webhook()
-        self.start_scheduler()
-
-    def start_webhook(self):
-        server = HTTPServer(('0.0.0.0', 8090), MacroHandler)
-        server.quant_callback = self.callback
-        threading.Thread(target=server.serve_forever, daemon=True).start()
-        log.info('📡 Macro webhook listening on :8090/macro')
-
-    def start_scheduler(self):
-        # nightly 00:05 book-keeping, adaptive interval for latency
-        interval = 300 if self.latency_mode == 'laptop' else 60  # Longer for high latency
-        SCHED.add_job(self.gold_sweep, 'interval', seconds=interval)
-        SCHED.start()
-
-    def gold_sweep(self):
-        kraken = KrakenAdapter()
-        try:
-            paxg_price = Decimal(str(kraken.book('PAXG-USD')['bids'][0][0]))
-        except Exception:
-            return
-        profit_file = 'logs/cycle_profit.json'
-        if not os.path.exists(profit_file):
-            return
-        try:
-            profit = json.load(open(profit_file)).get('profit_usd', Decimal('0'))
-            profit = Decimal(str(profit))
-        except Exception:
-            return
-        if profit <= Decimal('0'):
-            return
-        gold_amt = (profit * Decimal('0.15')) / paxg_price
-        cold = os.getenv('COLD_PAXG')
-        for ex in ['binance', 'kraken']:
-            try:
-                exchange = ExchangeWrapper(ABC):
-
-    (ex)  # Revised - use base for general xfer
-            exchange.xfer_paxg(gold_amt / Decimal('2'), cold)
-            except Exception:
+        """Silence default HTTP logging"""
         pass
-        json.dump({'profit_usd': Decimal('0')}, open(profit_file, 'w'))
-        log.info(f'💰 SWEEP {gold_amt.quantize(Decimal('0.0000'))} PAXG to cold wallet')
+
+
+class SignalServer:
+    """
+    TradingView Signal Server
+    
+    Receives and routes:
+    - MACRO signals (BTC/GOLD mode changes)
+    - A-Bot sniper signals (buy/sell specific coins)
+    """
+    
+    def __init__(self, macro_callback: Callable, abot_callback: Optional[Callable] = None):
+        """
+        Initialize signal server
+        
+        Args:
+            macro_callback: Function to call for MACRO mode changes
+            abot_callback: Function to call for A-Bot sniper signals
+        """
+        self.macro_callback = macro_callback
+        self.abot_callback = abot_callback
+        self.port = int(os.getenv('WEBHOOK_PORT', 8090))
+        self.server = None
+        self.server_thread = None
+        
+        logger.info(f"📡 Signal Server initialized on port {self.port}")
+    
+    def _handle_signal(self, data: Dict):
+        """Route incoming signal to appropriate handler"""
+        signal_type = data.get('type', '').upper()
+        
+        if signal_type == 'MACRO' or 'mode' in data:
+            # MACRO signal - mode change
+            mode = data.get('mode', data.get('action', 'BTC')).upper()
+            if mode in ['BTC', 'GOLD']:
+                logger.info(f"🔔 MACRO SIGNAL: Switching to {mode} MODE")
+                if self.macro_callback:
+                    self.macro_callback(mode)
+            else:
+                logger.warning(f"⚠️ Unknown MACRO mode: {mode}")
+                
+        elif signal_type == 'SNIPER' or 'coin' in data:
+            # A-Bot sniper signal
+            action = data.get('action', '').upper()
+            coin = data.get('coin', data.get('symbol', '')).upper()
+            
+            if action in ['BUY', 'SELL'] and coin:
+                logger.info(f"🎯 SNIPER SIGNAL: {action} {coin}")
+                if self.abot_callback:
+                    self.abot_callback(action, coin, data)
+            else:
+                logger.warning(f"⚠️ Invalid sniper signal: {data}")
+        else:
+            logger.warning(f"⚠️ Unknown signal type: {data}")
+    
+    def start(self):
+        """Start the webhook server"""
+        try:
+            self.server = HTTPServer(('0.0.0.0', self.port), MacroHandler)
+            self.server.signal_callback = self._handle_signal
+            
+            self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.server_thread.start()
+            
+            logger.info(f"✅ Signal Server listening on port {self.port}")
+            logger.info(f"   MACRO endpoint: http://0.0.0.0:{self.port}/")
+            logger.info(f"   Expected JSON format:")
+            logger.info(f"     MACRO: {{'type': 'MACRO', 'mode': 'BTC'}} or {{'type': 'MACRO', 'mode': 'GOLD'}}")
+            logger.info(f"     SNIPER: {{'type': 'SNIPER', 'action': 'BUY', 'coin': 'ETH'}}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start Signal Server: {e}")
+            raise
+    
+    def stop(self):
+        """Stop the webhook server"""
+        if self.server:
+            self.server.shutdown()
+            logger.info("🛑 Signal Server stopped")
+
+
+# Legacy alias for backward compatibility
+MacroServer = SignalServer

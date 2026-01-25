@@ -30,9 +30,9 @@ from manager.scanner import MarketContext, ArbitrageAnalyzer
 from core.order_executor import OrderExecutor
 from core.health_monitor import HealthMonitor
 from adapters.exchanges.wrappers import ExchangeWrapperFactory
-from bots.Q import QBot
-from bots.A import ABot
-from bots.G import GBot
+from bot.Q import QBot
+from bot.A import ABot
+from bot.G import GBot
 
 
 # Configure logging BEFORE anything else

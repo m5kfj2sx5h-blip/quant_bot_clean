@@ -8,12 +8,13 @@ Author: |\/|||
 """
 
 import ccxt
-import logger
+# import logger
 import logging
 import base64
 import re
 from abc import ABC, abstractmethod
-from domain.values import Symbol, Amount, Price  #<<---- NEEDS FIXING!!
+import os
+from decimal import Decimal
 from typing import Dict, Optional, Any
 from abc import ABC, abstractmethod
 from ecdsa import SigningKey, VerifyingKey

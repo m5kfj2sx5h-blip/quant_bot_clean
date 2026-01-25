@@ -5,7 +5,7 @@ import logging
 from decimal import Decimal
 from typing import Dict, Optional
 
-from ..domain.entities import Symbol, FeeStructure
+from domain.entities import Symbol, FeeStructure
 
 logger = logging.getLogger(__name__)
 

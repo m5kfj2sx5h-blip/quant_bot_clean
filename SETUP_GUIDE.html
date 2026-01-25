@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quant Bot Setup Guide</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --yellow: #d29922;
+            --red: #f85149;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 { color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        h2 { color: var(--green); margin: 2rem 0 1rem; }
+        h3 { color: var(--yellow); margin: 1.5rem 0 0.5rem; }
+        p { margin: 0.5rem 0; }
+        code {
+            background: var(--card);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        pre code { background: none; padding: 0; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .warning {
+            border-left: 4px solid var(--yellow);
+            padding-left: 1rem;
+            margin: 1rem 0;
+        }
+        .danger {
+            border-left: 4px solid var(--red);
+            padding-left: 1rem;
+            margin: 1rem 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th { background: var(--card); color: var(--accent); }
+        .step-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quant Bot Setup Guide</h1>
+    <p>Complete setup and execution instructions for the arbitrage trading system.</p>
+
+    <h2><span class="step-number">1</span> Prerequisites</h2>
+    <div class="card">
+        <h3>Required Software</h3>
+        <ul>
+            <li>Python 3.9+ installed</li>
+            <li>pip package manager</li>
+            <li>Git (optional, for updates)</li>
+        </ul>
+        
+        <h3>Required Accounts</h3>
+        <ul>
+            <li><strong>Binance.US</strong> - With API keys (trading enabled)</li>
+            <li><strong>Kraken</strong> - With API keys (Kraken Pro subscription recommended)</li>
+            <li><strong>Coinbase</strong> - Standard API keys</li>
+            <li><strong>Coinbase Advanced</strong> - Advanced Trade API keys (separate from standard)</li>
+            <li><strong>TradingView</strong> - Pro subscription for webhook alerts</li>
+        </ul>
+    </div>
+
+    <h2><span class="step-number">2</span> Installation</h2>
+    <pre><code># Navigate to the bot directory
+cd quant_bot_final
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Or install manually:
+pip install ccxt python-dotenv psutil aiohttp websockets apscheduler streamlit plotly pandas</code></pre>
+
+    <h2><span class="step-number">3</span> Environment Configuration</h2>
+    <div class="card">
+        <p>Copy the template and fill in your API keys:</p>
+        <pre><code>cp config/env.TEMPLATE .env</code></pre>
+        
+        <h3>Required Environment Variables</h3>
+        <table>
+            <tr><th>Variable</th><th>Description</th><th>Example</th></tr>
+            <tr><td><code>BINANCE_KEY</code></td><td>Binance.US API Key</td><td>abc123...</td></tr>
+            <tr><td><code>BINANCE_SECRET</code></td><td>Binance.US API Secret</td><td>xyz789...</td></tr>
+            <tr><td><code>KRAKEN_KEY</code></td><td>Kraken API Key</td><td>abc123...</td></tr>
+            <tr><td><code>KRAKEN_SECRET</code></td><td>Kraken API Secret</td><td>xyz789...</td></tr>
+            <tr><td><code>COINBASE_KEY</code></td><td>Coinbase Standard API Key</td><td>abc123...</td></tr>
+            <tr><td><code>COINBASE_SECRET</code></td><td>Coinbase Standard API Secret</td><td>xyz789...</td></tr>
+            <tr><td><code>COINBASEADV_KEY</code></td><td>Coinbase Advanced Trade API Key</td><td>abc123...</td></tr>
+            <tr><td><code>COINBASEADV_SECRET</code></td><td>Coinbase Advanced Trade API Secret</td><td>xyz789...</td></tr>
+            <tr><td><code>COLD_WALLET</code></td><td>Cold wallet address for gold sweeps</td><td>0x...</td></tr>
+            <tr><td><code>TV_WEBHOOK_SECRET</code></td><td>TradingView webhook secret</td><td>mysecret123</td></tr>
+            <tr><td><code>LATENCY_MODE</code></td><td>laptop or vps</td><td>laptop</td></tr>
+            <tr><td><code>AUTO_TRANSFER_ENABLED</code></td><td>true or false</td><td>false</td></tr>
+            <tr><td><code>WEBHOOK_PORT</code></td><td>Port for signal server</td><td>8090</td></tr>
+        </table>
+        
+        <div class="warning">
+            <strong>Important:</strong> Never commit your <code>.env</code> file to version control!
+        </div>
+    </div>
+
+    <h2><span class="step-number">4</span> TradingView Webhook Setup</h2>
+    <div class="card">
+        <h3>Webhook URL</h3>
+        <pre><code>http://YOUR_SERVER_IP:8090/signal</code></pre>
+        
+        <h3>MACRO Signal Format (BTC/GOLD Mode)</h3>
+        <pre><code>{
+    "secret": "your_tv_webhook_secret",
+    "type": "MACRO",
+    "action": "BTC"
+}</code></pre>
+        <p>Use <code>"action": "GOLD"</code> to switch to GOLD mode.</p>
+        
+        <h3>A-Bot Sniper Signal Format</h3>
+        <pre><code>{
+    "secret": "your_tv_webhook_secret",
+    "type": "SNIPER",
+    "action": "BUY",
+    "symbol": "SOL",
+    "exchange": "kraken"
+}</code></pre>
+        <p>Use <code>"action": "SELL"</code> to sell. Exchange is optional.</p>
+    </div>
+
+    <h2><span class="step-number">5</span> Running the Bot</h2>
+    <div class="card">
+        <h3>Start the Main Bot</h3>
+        <pre><code>python main.py</code></pre>
+        
+        <h3>Start the Dashboard (separate terminal)</h3>
+        <pre><code>streamlit run dashboard.py</code></pre>
+        <p>Dashboard will be available at <code>http://localhost:8501</code></p>
+        
+        <h3>Expected Terminal Output</h3>
+        <pre><code>2026-01-24 12:00:00 | main | INFO | === QUANT BOT STARTING ===
+2026-01-24 12:00:00 | main | INFO | Mode: BTC (Q:85% A:15% G:0%)
+2026-01-24 12:00:01 | main | INFO | Binance.US connected
+2026-01-24 12:00:01 | main | INFO | Kraken connected
+2026-01-24 12:00:02 | main | INFO | Coinbase connected
+2026-01-24 12:00:02 | main | INFO | Coinbase Advanced connected
+2026-01-24 12:00:02 | main | INFO | Signal server listening on port 8090
+2026-01-24 12:00:02 | main | INFO | Q-Bot started (dedicated thread)
+2026-01-24 12:00:02 | main | INFO | System ready. Waiting for opportunities...</code></pre>
+    </div>
+
+    <h2><span class="step-number">6</span> Capital Allocation</h2>
+    <div class="card">
+        <table>
+            <tr><th>Mode</th><th>Q-Bot (Arbitrage)</th><th>A-Bot (Sniper)</th><th>G-Bot (Gold)</th></tr>
+            <tr><td><strong>BTC Mode</strong></td><td>85%</td><td>15%</td><td>0% (dormant)</td></tr>
+            <tr><td><strong>GOLD Mode</strong></td><td>15%</td><td>0% (dormant)</td><td>85%</td></tr>
+        </table>
+        
+        <h3>Q-Bot Internal Split</h3>
+        <ul>
+            <li><strong>80%</strong> - Cross-Exchange Arbitrage (10s cycles)</li>
+            <li><strong>20%</strong> - Triangular Arbitrage (30s cycles)</li>
+        </ul>
+    </div>
+
+    <h2><span class="step-number">7</span> Manual Actions</h2>
+    <div class="card">
+        <h3>Gold Sweep (Dashboard)</h3>
+        <p>Manual only. Sweeps 15% of PAXG profits to cold wallet. Max 2x per month.</p>
+        
+        <h3>Manual Transfer Notification</h3>
+        <p>When <code>AUTO_TRANSFER_ENABLED=false</code>, the dashboard will alert you when drift exceeds 15% and recommend the best network (Tron/Solana) for manual transfer.</p>
+        
+        <h3>Mode Override (Dashboard)</h3>
+        <p>BTC MODE and GOLD MODE buttons allow manual override of the macro signal.</p>
+    </div>
+
+    <h2><span class="step-number">8</span> Fee Optimization</h2>
+    <div class="card">
+        <table>
+            <tr><th>Exchange</th><th>Optimization</th><th>Monthly Benefit</th></tr>
+            <tr><td>Binance.US</td><td>BNB fee payment (25% discount)</td><td>Maintain min BNB balance</td></tr>
+            <tr><td>Kraken</td><td>Kraken Pro subscription</td><td>$10,000 free trading</td></tr>
+            <tr><td>Coinbase</td><td>Coinbase One subscription</td><td>$500 free trading</td></tr>
+        </table>
+        
+        <h3>Stablecoin Yield Optimization</h3>
+        <table>
+            <tr><th>Exchange</th><th>Preferred Stablecoin</th><th>APR</th></tr>
+            <tr><td>Binance.US</td><td>USDT</td><td>~2%</td></tr>
+            <tr><td>Kraken</td><td>USDC / USDG</td><td>~4%</td></tr>
+            <tr><td>Coinbase</td><td>USDC</td><td>~4.5%</td></tr>
+        </table>
+    </div>
+
+    <div class="danger">
+        <h3>Important Reminders</h3>
+        <ul>
+            <li>This is a LONG-ONLY spot trading system. No shorting, margin, or futures.</li>
+            <li>Pre-position capital across all exchanges before starting.</li>
+            <li>G-Bot NEVER gives up more than 85% of its holdings. 15% stays forever.</li>
+            <li>Arbitrage uses pre-positioned capital. No transfers per trade.</li>
+            <li>Test with small amounts first!</li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); text-align: center; opacity: 0.7;">
+        <p>Quant Bot v1.0 | Setup Guide</p>
+    </footer>
+</body>
+</html>

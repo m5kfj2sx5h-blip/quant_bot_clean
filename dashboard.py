@@ -11,9 +11,9 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import numpy as np
 
-load_dotenv('/Users/dj3bosmacbookpro/Desktop/.env')
+load_dotenv('.env')
 
-FEE_STATE_PATH = '/Users/dj3bosmacbookpro/Desktop/QUANT_bot/fee_state.json'
+FEE_STATE_PATH = './fee_state.json'
 
 class FeeStateManager:
     def __init__(self):
@@ -557,7 +557,7 @@ def fetch_realtime_prices():
 
 def get_recent_trades():
     try:
-        history_path = '/Users/dj3bosmacbookpro/Desktop/QUANT_bot/trade_history.json'
+        history_path = './trade_history.json'
         if os.path.exists(history_path):
             with open(history_path, 'r') as f:
                 trades = json.load(f)
@@ -569,7 +569,7 @@ def get_recent_trades():
 def get_bot_activity():
     """Get latest bot activity from log file"""
     try:
-        log_path = '/Users/dj3bosmacbookpro/Desktop/QUANT_bot/bot_log.log'
+        log_path = './bot_log.log'
         if os.path.exists(log_path):
             with open(log_path, 'r') as f:
                 lines = f.readlines()
@@ -1146,7 +1146,7 @@ def main():
     with control_cols[1]:
         if st.button("BTC MODE", use_container_width=True, type="primary"):
             try:
-                with open('/Users/dj3bosmacbookpro/Desktop/QUANT_bot/current_mode.txt', 'w') as f:
+                with open('./current_mode.txt', 'w') as f:
                     f.write("BTC")
                 st.success("Switched to BTC Mode")
                 time.sleep(1)
@@ -1157,13 +1157,122 @@ def main():
     with control_cols[2]:
         if st.button("GOLD MODE", use_container_width=True):
             try:
-                with open('/Users/dj3bosmacbookpro/Desktop/QUANT_bot/current_mode.txt', 'w') as f:
+                with open('./current_mode.txt', 'w') as f:
                     f.write("GOLD")
                 st.success("Switched to GOLD Mode")
                 time.sleep(1)
                 st.rerun()
             except:
                 st.error("Failed to switch mode")
+    
+    st.divider()
+    
+    # MANUAL ACTIONS SECTION
+    st.markdown("#### MANUAL ACTIONS")
+    
+    action_cols = st.columns([1, 1, 1])
+    
+    with action_cols[0]:
+        # Manual Transfer Notification
+        auto_transfer = os.getenv('AUTO_TRANSFER_ENABLED', 'false').lower() == 'true'
+        if not auto_transfer:
+            # Check if transfer is needed (drift > 15%)
+            transfer_needed = False
+            transfer_details = []
+            for balance in balance_data:
+                if balance['Status'] == 'ONLINE':
+                    pct_of_total = (balance['NetWorth'] / total_net_worth * 100) if total_net_worth > 0 else 0
+                    if abs(pct_of_total - 33.33) > 15:  # More than 15% drift
+                        transfer_needed = True
+                        transfer_details.append(f"{balance['Exchange']}: {pct_of_total:.1f}%")
+            
+            if transfer_needed:
+                st.markdown(f"""
+                <div style="background: rgba(245, 158, 11, 0.2); padding: 1rem; border-radius: 8px; border: 2px solid #f59e0b;">
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">
+                        ⚠️ MANUAL TRANSFER RECOMMENDED
+                    </div>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">
+                        Drift exceeds 15%. Consider rebalancing:
+                    </div>
+                    <div style="font-size: 0.7rem; margin-top: 0.5rem;">
+                        {'<br>'.join(transfer_details)}
+                    </div>
+                    <div style="font-size: 0.65rem; margin-top: 0.5rem; color: #888;">
+                        Use Tron/Solana for lowest fees
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="background: rgba(0, 255, 163, 0.1); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: #00ffa3;">✓ No transfers needed</div>
+                    <div style="font-size: 0.7rem; opacity: 0.7;">Drift within 15% threshold</div>
+                </div>
+                """)
+        else:
+            st.markdown("""
+            <div style="background: rgba(102, 126, 234, 0.1); padding: 1rem; border-radius: 8px;">
+                <div style="font-size: 0.8rem; color: #667eea;">Auto-Transfer: ENABLED</div>
+                <div style="font-size: 0.7rem; opacity: 0.7;">System handles rebalancing automatically</div>
+            </div>
+            """)
+    
+    with action_cols[1]:
+        # Gold Sweep Button
+        st.markdown("""
+        <div style="background: rgba(251, 191, 36, 0.1); padding: 0.5rem; border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.75rem; color: #fbbf24;">GOLD SWEEP (Manual Only)</div>
+            <div style="font-size: 0.65rem; opacity: 0.7;">15% of profits → Cold Wallet</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Load sweep state
+        sweep_state_file = './logs/gold_profits.json'
+        sweeps_this_month = 0
+        max_sweeps = 2
+        try:
+            if os.path.exists(sweep_state_file):
+                with open(sweep_state_file) as f:
+                    sweep_data = json.load(f)
+                    sweeps_this_month = sweep_data.get('sweeps_this_month', 0)
+        except:
+            pass
+        
+        sweeps_remaining = max_sweeps - sweeps_this_month
+        can_sweep = sweeps_remaining > 0 and total_gold > 0
+        
+        if st.button(f"SWEEP GOLD ({sweeps_remaining}/{max_sweeps} remaining)", 
+                     use_container_width=True, 
+                     disabled=not can_sweep,
+                     type="secondary"):
+            st.warning("⚠️ Confirm sweep in terminal or API")
+            # Write sweep request file for main.py to pick up
+            try:
+                with open('./logs/sweep_request.txt', 'w') as f:
+                    f.write(f"SWEEP_REQUESTED:{datetime.now().isoformat()}")
+                st.info("Sweep request submitted. Check terminal.")
+            except:
+                st.error("Failed to submit sweep request")
+    
+    with action_cols[2]:
+        # Current Mode Display
+        try:
+            with open('./current_mode.txt', 'r') as f:
+                current_mode = f.read().strip()
+        except:
+            current_mode = "BTC"
+        
+        mode_color = "#f59e0b" if current_mode == "GOLD" else "#00ffa3"
+        st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.75rem; opacity: 0.7;">CURRENT MODE</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: {mode_color};">{current_mode}</div>
+            <div style="font-size: 0.65rem; opacity: 0.5; margin-top: 0.5rem;">
+                {'Q:85% A:15% G:0%' if current_mode == 'BTC' else 'Q:15% A:0% G:85%'}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.divider()
     

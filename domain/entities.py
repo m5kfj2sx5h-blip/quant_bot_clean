@@ -117,3 +117,31 @@ class TradingThresholds:
 
     def can_take_position(self, position_usd: Decimal) -> bool:
         return position_usd <= self.max_position_size_usd
+
+
+@dataclass
+class FeeStructure:
+    """Fee structure for an exchange"""
+    exchange: str
+    maker_fee: Decimal = Decimal('0.001')  # 0.1% default
+    taker_fee: Decimal = Decimal('0.001')  # 0.1% default
+    bnb_discount: bool = False
+    bnb_discount_pct: Decimal = Decimal('0.25')  # 25% discount with BNB
+    zero_fee_allowance: Decimal = Decimal('0')  # Monthly free trading allowance
+    zero_fee_remaining: Decimal = Decimal('0')  # Remaining this month
+    preferred_stablecoin: str = 'USDT'
+    stablecoin_yield_pct: Decimal = Decimal('0')  # APR for idle stablecoins
+    
+    def get_effective_fee(self, is_maker: bool = False, use_bnb: bool = False) -> Decimal:
+        """Get effective fee after discounts"""
+        base_fee = self.maker_fee if is_maker else self.taker_fee
+        
+        # Check zero-fee allowance first
+        if self.zero_fee_remaining > 0:
+            return Decimal('0')
+        
+        # Apply BNB discount if applicable
+        if use_bnb and self.bnb_discount:
+            return base_fee * (1 - self.bnb_discount_pct)
+        
+        return base_fee

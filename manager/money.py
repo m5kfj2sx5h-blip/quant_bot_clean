@@ -32,7 +32,7 @@ class MoneyManager:
         self.capital_mode = "balanced"  # Default, update in check_drift
         self._load_config()
         logger.info(
-            f"⚖️ MACRO MONEY MANAGER Initialized. Suggests MANUAL transfers >${self.MIN_MACRO_TRANSFER_VALUE:.0f}. Latency mode: {self.latency_mode.upper()}, Drift threshold: {self.drift_threshold * Decimal('100')}%")
+            f"⚖️ MACRO MONEY MANAGER Initialized. Suggests MANUAL transfers >${self.MIN_MACRO_TRANSFER_VALUE:.0f}. Latency mode: {self.latency_mode.upper()}, Drift threshold: {float(self.drift_threshold * 100)}%")
 
     def _load_config(self):
         default_config = {
@@ -205,12 +205,12 @@ class MoneyManager:
                             'from': exch_name if deviation > Decimal('0') else target_exchange,
                             'to': target_exchange if deviation > Decimal('0') else exch_name,
                             'suggested_amount_usd': abs(deviation) * Decimal('0.5'),
-                            'reason': f'High latency manual: {exch_name} deviation ${deviation:.2f} (threshold {self.drift_threshold * Decimal('100')}%).'
+                            'reason': f'High latency manual: {exch_name} deviation ${deviation:.2f} (threshold {float(self.drift_threshold * 100)}%).'
                         }
                         plan['suggested_actions'].append(action)
                     else:  # Low latency: Auto transfer or notify conversion.py
                         logger.info(
-                            f"Auto drift correction: {exch_name} deviation ${deviation:.2f} (threshold {self.drift_threshold * Decimal('100')}%).")
+                            f"Auto drift correction: {exch_name} deviation ${deviation:.2f} (threshold {float(self.drift_threshold * 100)}%).")
                         if abs(deviation) > self.MIN_MACRO_TRANSFER_VALUE:
                             # Notify conversion.py for fee-free triangular
                             self.conversion_manager.detect_triangle(exch_name, target_exchange, deviation,
