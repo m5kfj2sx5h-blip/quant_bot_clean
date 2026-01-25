@@ -1,3 +1,5 @@
+Currently 3 branches: Quant_bot_clean is a hot mess! Quant_bot_final is a connected slavaged version, QB is the branch we will work on to do all this!
+
 I searched GitHub and broader web sources for open source cryptocurrency arbitrage bots, focusing on cross-exchange arbitrage, Python implementations, and any that align with your strategy (US-compliant exchanges, dynamic data fetching, official SDKs over CCXT, low-transfer or no-transfer preference, staking integration, or hexagonal/clean architecture).
 Key findings (most relevant first):
 
