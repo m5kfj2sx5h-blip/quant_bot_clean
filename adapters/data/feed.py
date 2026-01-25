@@ -5,9 +5,13 @@ import logging
 import time
 import statistics  # ADDED: Missing import for measure_network_latency
 from typing import Dict, List, Callable
-from adapters.data.ws import BinanceUSWebSocket, KrakenWebSocket, CoinbaseWebSocket
+from adapters.data.ws import BinanceUSWebSocket, KrakenWebSocket, CoinbaseWebSocket, CoinbaseAdvancedWebSocket
 from manager.scanner import MarketContext, AuctionState, MarketPhase
 from core.auction import AuctionContextModule
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ class DataFeed:
 
         # Capital Mode Support
         self.exchange_balances = {}  # exchange_name -> total_balance_usd
-        self.latency_mode = 'LOW_LATENCY'  # Only WebSocket mode supported
+        self.latency_mode = 'LOW_LATENCY'  # Only WebSocket mode??? Don't we need adjustments for HIGH_LATENCY too???
 
         # Connection State
         self.running = False
@@ -330,14 +334,15 @@ class DataFeed:
                     await coinbase_ws.connect()
                     coinbase_ws.subscribe(self._handle_websocket_data)
                     self.ws_connections['coinbase'] = coinbase_ws
+                elif name == 'coinbase_advanced':
+                    coinbase_adv_ws = CoinbaseAdvancedWebSocket("BTC-USD")
+                    await coinbase_adv_ws.connect()
+                    coinbase_adv_ws.subscribe(self._handle_websocket_data)
+                    self.ws_connections['coinbase_advanced'] = coinbase_adv_ws
 
                 # Initialize connection health tracking
                 if name not in self.connection_health:
-                    self.connection_health[name] = {
-                        'status': 'connected',
-                        'last_success': time.time(),
-                        'errors': 0
-                    }
+                    self.connection_health = {'status': 'connected', 'last_success': time.time(), 'errors': 0}
                 self.reconnect_attempts[name] = 0
 
                 self.logger.info(f"✅ Custom WebSocket for {name.upper()} established")
@@ -345,11 +350,7 @@ class DataFeed:
             except Exception as e:
                 self.logger.error(f"❌ Custom WebSocket init failed for {name}: {e}")
                 if name not in self.connection_health:
-                    self.connection_health[name] = {
-                        'status': 'failed',
-                        'last_success': None,
-                        'errors': 1
-                    }
+                    self.connection_health = {'status': 'failed', 'last_success': None, 'errors': 1}
 
     async def _handle_websocket_data(self, data: Dict):
         """Handle incoming WebSocket data from custom connections."""
@@ -363,9 +364,11 @@ class DataFeed:
                     exchange = 'binance'
                     symbol = 'BTC/USDT'
                 elif exchange == 'kraken':
-                    symbol = 'BTC/USD'
+                    symbol = 'BTC/USDG'
                 elif exchange == 'coinbase':
                     symbol = 'BTC/USD'
+                elif exchange == 'coinbase_advanced':
+                    symbol = 'BTC/USDC'
                 else:
                     return
 

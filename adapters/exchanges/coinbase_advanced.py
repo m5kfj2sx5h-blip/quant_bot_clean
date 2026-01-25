@@ -1,43 +1,33 @@
-import ccxt.async_support as ccxt
-import base64
-import re
-from ecdsa import SigningKey
-from ecdsa.util import sigencode_der
+from coinbase.advanced.client import AdvancedTradeClient as CoinbaseAdvancedClient
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-
+from domain.entities import Price, Amount, Symbol
+from dotenv import load_dotenv
+import os
+import base64
+import re
 from exchanges.base import ExchangeAdapter
-from domain.values import Price, Amount, Symbol           #<<------- NEEDS FIXING!!
 
-class CoinbaseAdvancedAdapter(ExchangeAdapter):
-    @staticmethod
+load_dotenv()
+
+class CoinbaseAdvancedAdapter:
     def _parse_pem_key(pem_key: str) -> bytes:
-        try:
-            pem_key = pem_key.strip()
-            if '-----BEGIN PRIVATE KEY-----' in pem_key:
-                b64_key = re.search(r'-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----', pem_key, re.DOTALL)
-                if b64_key:
-                    key_data = b64_key.group(1).replace('\n', '')
-                else:
-                    raise ValueError("Invalid PEM format")
-            else:
-                key_data = pem_key.replace('\n', '')
-            key_bytes = base64.b64decode(key_data)
-            try:
-                key = SigningKey.from_der(key_bytes)
-                return key.to_der()
-            except:
-                return key_bytes
-        except Exception as e:
-            return b''
+        pem_key = pem_key.strip()
+        if '-----BEGIN PRIVATE KEY-----' in pem_key:
+            b64_key = re.search(r'-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----', pem_key, re.DOTALL)
+            key_data = b64_key.group(1).replace('\n', '') if b64_key else ''
+        elif '-----BEGIN EC PRIVATE KEY-----' in pem_key:
+            b64_key = re.search(r'-----BEGIN EC PRIVATE KEY-----(.*?)-----END EC PRIVATE KEY-----', pem_key, re.DOTALL)
+            key_data = b64_key.group(1).replace('\n', '').replace(' ', '') if b64_key else ''
+        else:
+            key_data = pem_key.replace('\n', '')
+        return base64.b64decode(key_data)
 
-    def __init__(self, config: Dict[str, Any]):
-        parsed_secret = self._parse_pem_key(config['api_secret'])
-        self.client = ccxt.coinbaseadvanced({
-            'apiKey': config['api_key'],
-            'secret': base64.b64encode(parsed_secret).decode() if parsed_secret else config['api_secret'],
-            'enableRateLimit': True
-        })
+    def __init__(self):
+        api_key = os.getenv('COINBASEADV_KEY')
+        api_secret = os.getenv('COINBASEADV_SECRET')
+        parsed_secret = self._parse_pem_key(api_secret)
+        self.client = CoinbaseAdvancedClient(api_key=api_key, api_secret=base64.b64encode(parsed_secret).decode())
 
     def get_name(self) -> str:
         return "coinbase_advanced"

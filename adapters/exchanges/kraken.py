@@ -1,12 +1,18 @@
-import krakenex
+from kraken.spot import Spot as KrakenSpot
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from exchanges.base import ExchangeAdapter
-from domain.values import Price, Amount, Symbol         #<------- NEEDS FIXING!
+from domain.entities import Price, Amount, Symbol
 
-class KrakenAdapter(ExchangeAdapter):
-    def __init__(self, config: Dict[str, Any]):
-        self.client = krakenex.API(key=config['api_key'], secret=config['api_secret'])
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+class KrakenAdapter:
+    def __init__(self):
+        api_key = os.getenv('KRAKEN_KEY')
+        api_secret = os.getenv('KRAKEN_SECRET')
+        self.client = KrakenSpot(key=api_key, secret=api_secret)
 
     def get_name(self) -> str:
         return "kraken"

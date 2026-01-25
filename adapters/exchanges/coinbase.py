@@ -1,17 +1,17 @@
-import ccxt.async_support as ccxt
+from coinbase.wallet.client import Client as CoinbaseClient
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
+from domain.entities import Price, Amount, Symbol
+from dotenv import load_dotenv
+import os
 
-from exchanges.base import ExchangeAdapter
-from domain.values import Price, Amount, Symbol     #<<---- NEEDS FIXING!!
+load_dotenv()
 
-class CoinbaseRegularAdapter(ExchangeAdapter):
-    def __init__(self, config: Dict[str, Any]):
-        self.client = ccxt.coinbase({
-            'apiKey': config['api_key'],
-            'secret': config['api_secret'],
-            'enableRateLimit': True
-        })
+class CoinbaseRegularAdapter:
+    def __init__(self):
+        api_key = os.getenv('COINBASE_KEY')
+        api_secret = os.getenv('COINBASE_SECRET')
+        self.client = CoinbaseClient(api_key, api_secret)
 
     def get_name(self) -> str:
         return "coinbase"

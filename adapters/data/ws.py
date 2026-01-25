@@ -3,6 +3,11 @@ import json
 import logging
 import time
 import websockets
+from dotenv import load_dotenv
+import os
+from coinbase.advanced.client import AdvancedTradeClient as CoinbaseAdvancedClient
+
+load_dotenv()
 
 class BinanceUSWebSocket:
     def __init__(self, symbol: str = "btcusdt"):
@@ -58,6 +63,8 @@ class BinanceUSWebSocket:
                 await callback(data)
             except Exception as e:
                 self.logger.error(f"Callback error: {e}")
+
+# Similar for KrakenWebSocket (preserve as-is, aligns with SDK)
 
 class KrakenWebSocket:
     def __init__(self, pair: str = "XBT/USD"):
@@ -146,6 +153,56 @@ class CoinbaseWebSocket:
                     await self._notify_callbacks(book_data)
         except Exception as e:
             self.logger.error(f"Coinbase listen error: {e}")
+
+    def subscribe(self, callback):
+        self.callbacks.append(callback)
+
+    async def _notify_callbacks(self, data: dict):
+        for callback in self.callbacks:
+            try:
+                await callback(data)
+            except Exception as e:
+                self.logger.error(f"Callback error: {e}")
+
+# Add Coinbase Advanced WebSocket
+class CoinbaseAdvancedWebSocket:
+    def __init__(self, product_ids: str = "BTC-USD"):
+        self.uri = "wss://advanced-trade-ws.coinbase.com"  # From docs
+        self.ws = None
+        self.product_ids = product_ids
+        self.logger = logging.getLogger(__name__)
+        self.callbacks = []
+
+    async def connect(self):
+        try:
+            self.ws = await websockets.connect(self.uri)
+            self.logger.info("✅ Coinbase Advanced WebSocket connected")
+            subscribe_msg = {
+                "type": "subscribe",
+                "product_ids": [self.product_ids],
+                "channel_names": ["level2"]
+            }
+            await self.ws.send(json.dumps(subscribe_msg))
+            asyncio.create_task(self._listen())
+        except Exception as e:
+            self.logger.error(f"Coinbase Advanced connection failed: {e}")
+            raise
+
+    async def _listen(self):
+        try:
+            async for message in self.ws:
+                data = json.loads(message)
+                if data.get('channel') == 'level2':
+                    book_data = {
+                        'exchange': 'coinbase_advanced',
+                        'type': 'orderbook',
+                        'bids': [[float(b[0]), float(b[1])] for b in data.get('events', [])[0].get('updates', []) if b[0] == 'buy'],
+                        'asks': [[float(a[0]), float(a[1])] for a in data.get('events', [])[0].get('updates', []) if a[0] == 'sell'],
+                        'timestamp': time.time() * 1000
+                    }
+                    await self._notify_callbacks(book_data)
+        except Exception as e:
+            self.logger.error(f"Coinbase Advanced listen error: {e}")
 
     def subscribe(self, callback):
         self.callbacks.append(callback)

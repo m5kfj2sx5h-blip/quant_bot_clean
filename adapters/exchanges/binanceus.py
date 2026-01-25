@@ -1,19 +1,18 @@
 import ccxt.async_support as ccxt
+from binance.spot import Spot as BinanceSpot
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
+from domain.entities import Price, Amount, Symbol
+from dotenv import load_dotenv
+import os
 
-from exchanges.wrappers import ExchangeAdapter
-from domain.values import Price, Amount, Symbol         #<<---- NEEDS FIXING!!
-from binance.spot import Spot as BinanceSpot
+load_dotenv()
 
-class BinanceUSAdapter(ExchangeAdapter):
-    def __init__(self, config: Dict[str, Any]):
-        self.client = ccxt.binanceus({
-            'apiKey': config['api_key'],
-            'secret': config['api_secret'],
-            'enableRateLimit': True,
-            'options': {'defaultType': 'spot'}
-        })
+class BinanceUSAdapter:
+    def __init__(self):
+        api_key = os.getenv('BINANCEUS_API_KEY')
+        api_secret = os.getenv('BINANCEUS_API_SECRET')
+        self.client = BinanceSpot(key=api_key, secret=api_secret, base_url='https://api.binance.us')
 
     def get_name(self) -> str:
         return "binanceus"
