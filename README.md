@@ -1,148 +1,46 @@
-A well-constructed cryptocurrency trading bot operates through a four-step cycle: 
-1. Data collection and processing
-2. Calculations and Analysis against strategy guidelines
-3. Decision-making
-4. Trade execution 
+A well-built cryptocurrency trading bot follows a four-step cycle:
 
-This modular and secure structure guarantees reliable execution, mitigates common trading pitfalls, and facilitates adaptability to diverse strategies.
+1. **Data Collection and Processing:**
+- The bot continuosly monitors cryptocurrency markets in real-time.
+- It retrieves the latest prices, order books, balances, and fees from exchanges.
+- It uses live “WebSocket” connections for instantaneous updates.
 
-Here is a straightforward, plain-English explanation of how any well-built Python cryptocurrency trading bot should function to execute a strategy accurately. This is the standard approach employed by professional bots (such as those developed on Freqtrade, Hummingbot, or custom-built ones) to ensure reliable and safe operation. Consider it a factory assembly line that repeats every few seconds or minutes.
+2. **Calculations and Analysis:**
+- Performs calculations privately within itself.
+- The bot analyzes the data against strategy guidelines.
 
-### The Four-Step Loop Every Effective Bot Adheres To
+3. **Decision-Making:**
+- Based on the analysis, the bot makes decisions.
+-  Double-checks conditions before taking action.
+- Ensures sufficient funds, safety, and adherence to rules.
+- Analyzes external signals and internal health checks.
+- Proceeds only if all conditions are met.
+- This prevents 90% of losses.
 
-1. **Data Collection**
-- The bot continuously monitors cryptocurrency markets in real-time.
-- It retrieves the most recent prices, order books, balances, and fees from exchanges.
-- It utilizes live “WebSocket” connections to receive instantaneous updates.  
-- Why this matters: This is an old post. data = bad Decisions. Fresh data is crucial for the bot to make informed decisions and identify real-time opportunities.
+4. **Trade Execution:**
+- Places orders if conditions are met.
+- Sends precise instructions to exchanges.
+- Monitors orders, updates balances, and cleans up in case of timeouts, cancellations, or partial fills.
+- Logs transactions and may rebalance wallets.
+- Loops back to Step 1 for the next check.
 
-2. **Crunch the Numbers and Run the Strategy**
-- Performs calculations privately within itself
-- Calculates factors such as: 
-    - “Is there a profitable price gap, after fees and slippage?” 
-    - “Is the market liquid enough (deep enough order book) so I won’t be stuck?”
-- Applies my exact strategy rules: e.g., only trade if NET_profit > 0.6%.
-- All of this occurs in pure mathematics—no order placement, no risk yet. It is simply “thinking” in VRAM memory (faster than paper!)
+This approach is crucial because execution directly interacts with real money, so simplicity, safety, and speed are essential. No sloppy code is used here or anywhere.
 
-3. **Make the Go/No-Go Decision**
-Before taking any action, the bot double-checks everything:
-- “Do I have sufficient funds in the appropriate locations?”
-- “Is this trade still safe (e.g., no sudden news, no extreme volatility)?”
-- “Have I reached my daily loss limit, maximum open trades, or other rules?”
-- “Does this align with my overall trading mode (e.g., aggressive today or conservative)?”
-- It can even analyze external signals (such as TradingView alerts) or internal health checks.
-- Only if **all** conditions are met—profit target achieved, risks minimized, funds available—does it proceed. Otherwise, it skips and waits for the next iteration.
-- Why this matters: This is where 90% of losses are prevented. The bot acts like a cautious human trader who always questions the worthiness of a trade before executing it.
-
-4. **Execute the Trade**
-If the decision is “yes,” the bot places the orders—and only then.
-- It sends precise instructions to the exchanges: buy here, sell there, possibly in small increments to avoid price fluctuations.  
-   - The bot closely monitors orders, updating balances upon successful execution and automatically cleaning up in the event of timeouts, cancellations, or partial fills.
-- It logs all transactions and may rebalance wallets if necessary, such as transferring funds between exchanges at a low cost.
-- The bot then loops back to Step 1 for the next check.
-- This approach is crucial because execution is the only part that directly interacts with real money, necessitating simplicity, safety, and speed. No sloppy code is employed here or ANYWHERE!!
+This modular and secure structure ensures reliable execution, mitigates common trading pitfalls, and facilitates adaptability to diverse strategies.
 
 ### The Overall Flow in One Sentence
-The bot operates in a continuous loop: **Monitor markets → Calculate opportunities → Determine if execution is safe and profitable → Execute only if yes → Repeat.**
+The bot operates in a continuous loop: 
 
-### Why This Structure is Effective for Any Strategy
-- **Modularity:** The strategy math can be easily swapped out without disrupting data or execution.
-- **Safety:** Most of the work occurs before any money is moved.
-- **Speed:** The bot is fast enough for most strategies (seconds or sub-seconds on suitable hardware).
-- **Avoidance of Common Pitfalls:** The bot avoids over-trading, stale data, fees/slippage, and trading when broke.
-- **Discipline:** Investors appreciate the bot’s disciplined approach, as it only trades when the numbers and rules indicate “go.”
+**Monitor markets → Calculate opportunities → Determine if execution is safe and profitable → Execute only if yes → Repeat.**
 
-This is how every serious cryptocurrency bot operates internally, whether it’s arbitrage, trend-following, market-making, or any other strategy. If your strategy follows this four-step rhythm, it will function correctly and reliably.
+CURRENT STATUS: Currently 3 branches:
+quant_bot clean: INCOMPLETE : components taken from quant_bot_2.1
+quant_bot_final: a salvage attempt of quant_bot_clean
+quant_bot_2.1: last known working version with LIVE real money executions.
 
-CURRENT STATUS: Currently 2 branches: Quant_bot_clean is a hot mess! Quant_bot_final is a connected slavaged RESTORED version BUT WITH HARD FIXED VALUES
-
-
-https://github.com/notlelouch/ArbiBot
-High-performance cross-exchange arbitrage bot. Monitors price discrepancies across multiple exchanges and executes trades. Similar to your Q-Bot focus on cross-exchange opportunities, but uses CCXT (not official SDKs) and does not emphasize dynamic API-first fetching of fees/balances/yields.
-https://github.com/nelso0/barbotine-arbitrage-bot
-Pure Python, CCXT-based cross-exchange arbitrage bot that explicitly avoids transfers between exchanges (operates opportunistically without moving funds). Closest match to your "no-transfer preferred" logic (via triangular/intra-exchange conversions first). No staking or hedging, static configs.
-https://github.com/fendouai/ArbitrageBot (and linked repos like Peregrine)
-Collection of arbitrage detectors and bots, some focused on Bitcoin cross-exchange. Includes opportunity scanners similar to your scanner.py. Mostly CCXT or custom REST.
-Freqtrade
-Popular general crypto trading bot (not purely arbitrage). Supports many exchanges, WebSockets, dynamic strategies, but not hexagonal architecture or strict official SDK usage. Has staking-like features in some strategies.
-Jesse
-Advanced Python trading framework. Clean architecture, backtesting, live trading. Not arbitrage-specific, but modular and could be adapted.
-OctoBot (mentioned in lists)
-Modular open-source bot with arbitrage channels/plugins.
-
-These can serve as reference for arbitrage scanning loops (Q.py style) and opportunity calculation, but your refactored version will be more adaptive and maintainable.
-
-
-
-
-last updated 1.23.26 16:00-----------
-
-Project Goal & Hexagonal Refactor Instructions”). This captures exactly what we are trying to achieve, stays 100% faithful to your original strategy (no deviations), and gives any future AI the precise context to continue helping you.
-## Project Goal & Hexagonal Refactor Instructions
-
-This is a cryptocurrency arbitrage and hedging bot designed for a ~$9,000 budget in January 2026.
-
-### Core Strategy (100% to be preserved)
-- **Modes** (switched via macro signals from TradingView):
-  - **BTC Mode**: 85% fast arbitrage (cross-exchange + triangular), 15% smart buying/staking.
-  - **GOLD Mode**: 85% gold hedging (PAXG), 15% light arbitrage.
-- **Arbitrage** (Q-Bot): Buy low / sell high across exchanges or triangular within one exchange. Prefer no-transfer arbs. Only execute if net profit > 0.5% after fees/slippage/transfers.
-- **Staking/Accumulation** (A-Bot): Buy on signals, stake for yield, manage up to 6 slots with seat warmers.
-- **Gold Hedging/Sweeps** (G-Bot): In GOLD Mode buy PAXG; sweep 15% profits to safe wallet monthly.
-- **Money Management**: Keep balances even across exchanges (drift <15%). Use conversion (triangular) before transfer. Prefer cheap/fast networks (Tron/Solana, fees <$1).
-- **Risk & Safety**: Depth check (top 5 volume > 2.5–5× trade size), volatility slowdown (double cycle time on high vol), dynamic min-profit threshold (0.4–1% based on auction/market context).
-- **Data**: WebSocket-only for prices & order books + short cache. No REST fallback for real-time.
-- **Exchanges**: Use official libraries (ccxt for general, krakenex for Kraken, cbpro for Coinbase – leverage Coinbase One zero-fee benefits).
-
-### Current Refactor Goal (Hexagonal Architecture)
-We are reorganizing the code into a clean **hexagonal / ports & adapters** structure without changing the strategy, settings, or nomenclature.
-
-- **core/**: Pure domain logic & calculations (no I/O, no external deps):
-DONE  - profit.py (net/gross profit, slippage, fees, baseline 0.5%)
-DONE  - risk.py (depth check, volatility slowdown) MERGED into health_monitor
-DONE  - thresholds.py (dynamic 0.4–1% threshold)
-DONE  - analysis.py (cvd, wykoff, volume profile, book analysis) MERGED into health_monitor!!
-
-DONE- auction.py (chase_limit, sizing, iceberg)
-
-DONE order_executor.py (execution with risk checks)
-
-DONE- adapters/feed.py (WS data + short cache, WS-only)
-DONE- exchanges/wrappers.py (exchange REST/WS abstraction)
-
-DONE - **domain/**: Pure data types
-DONE  - entities.py (Trade, Position, Signal, Mode)
-DONE  - values.py (Price, Amount, Symbol, Network – all Decimal)
-DONE  - aggregates.py (ArbOpportunity, Balance with drift)
-
-DONE - **manager/** (coordinators – short names): mode.py, money.py, conversion.py, transfer.py, scanner.py, ws.py, signals.py, fees.py, staking.py, health.py
-
-- **ports/**: Interfaces
-  - inbound/: signal.py, command.py
-  - outbound/: prices.py, books.py, balances.py, execution.py, fees.py, ws.py
-
-DONE    - **adapters/**: Real implementations
-DONE    - exchanges/: base.py, binance.py (ccxt), kraken.py (krakenex), coinbase.py (cbpro)
-
- - persistence/: state.py, logs.py
-
--  **bots/**: Q.py, A.py, G.py (slim orchestration)
-
-DONE- **orchestrator.py** (merged main + system_orchestrator.py)
-
-**Prioritized Tweaks** (must be integrated without changing strategy):
-1. Baseline 0.5% net profit threshold
-2. Dynamic 0.4–1% threshold using auction/market signals
-3. Depth check (top 5 volume > 2.5–5× trade size)
-4. Volatility slowdown (double cycle time on high range)
-5. WebSocket-only for prices/books + short cache
-6. Use official Coinbase & Kraken Python libraries
-
-**Rules**:
-- Never change the strategy, settings, or existing nomenclature.
-- Use Decimal everywhere for money calculations.
-
-Crypto Arbitrage Strategy: Exploiting Market Inefficiencies for Consistent Returns
+qb_2.1 is monolithic and drains memory
+qb_final is an impotent MVP prototype
+qb_clean is what we want to work on!
 
 The system operates in two primary modes based on a custom TradingView signal:
 
@@ -201,8 +99,8 @@ System Components
 	* Receives transfer route from [CONVERSION MANAGER].
 	* Does not interrupt arbitrage system
 	* Always queries real-time network fees & times, at execution (via exchange API (or ccxt)) and select the cheapest + fastest shared network between sender/receiver eg:
-	* For Kraken → Binance (USDT): Prefer Tron (TRC-20) or Solana → ~$0.50-1 fee, <5 min.
-	* For Binance → Coinbase (USDC): Prefer Solana, Polygon, or Base → <$0.10 fee, <5 min (Base often near-instant).
+	* For Kraken → binanceus (USDT): Prefer Tron (TRC-20) or Solana → ~$0.50-1 fee, <5 min.
+	* For binanceus → Coinbase (USDC): Prefer Solana, Polygon, or Base → <$0.10 fee, <5 min (Base often near-instant).
 	* Adds safety check: Minimum transfer size $500+ (to avoid dust/minimums; simulate net cost (fee + slippage) before transferring).
 	* One job: Keep average transfer cost per rebalance <$1 (achievable on above networks), ensuring operational costs stay <0.5% of capital annually.
 8. [[A-Bot]]
@@ -223,86 +121,130 @@ System Components
 
 Overall Strategy Notes (Cost-Reduction Emphasis, needs to be finalized)
 * For the strategy to work in the real world we must emphasize intra-exchange triangular arbitrage (100% of Q-Bot cycles, ideally) to eliminate cross-account transfers during normal operations—zero transfer fees, full capital efficiency.
-* Uses stablecoin pairs (USDT/USDC) on single exchanges with deep liquidity (e.g., Binance for triangular) to maximize 0.2-0.8% net edges without movement costs.
+* Uses stablecoin pairs (USDT/USDC/USDG) on single exchanges to maximize 0.2-0.8% net edges without movement costs.
 * Never use Ethereum (ERC-20) for transfers under $10k—fees often $0.87-5+ (volatile with congestion), times 5-15+ minutes. Avoid Avalanche unless specifically <$1 confirmed.
 * Profitability Boost: By minimizing transfers via higher drift (8%) + low-fee networks, retain ~0.1-0.3% more per opportunity → potential 5-15% higher annual ROI on small capital vs. frequent/high-fee moves.
 
 * For any required transfers, exclusively use the following & verify low-fee/fast stablecoin networks (USDT/USDC only; match sender/receiver support to prevent loss):
-    * Tron (TRC-20 for USDT): Fees ~$0.50-1 (often under $1 for $1k equivalent); confirmation time <1-5 minutes. Widely supported on Binance, Kraken, and many others—cheapest consistent option for USDT.
+    * Tron (TRC-20 for USDT): Fees ~$0.50-1 (often under $1 for $1k equivalent); confirmation time <1-5 minutes. Widely supported on binanceus, Kraken, and many others—cheapest consistent option for USDT.
     * Solana: Fees <$0.01-0.10 (frequently near-zero); time <1-5 minutes (near-instant in low congestion). Excellent for both USDT and USDC; high adoption in 2026 for fast arb rebalancing.
     * Polygon (for USDC/USDT): Fees <$0.01-0.50; time <1-5 minutes. Strong for EVM-compatible exchanges; very low and predictable.
     * Base (Coinbase’s L2 for USDC): Fees ~$0.01-0.10; time ~1-2 seconds to near-instant. Ideal for Coinbase endpoints; reduces latency dramatically.
-    * BNB Smart Chain (BEP-20 for USDT): Fees ~$0.01-1 (sometimes free on Binance promotions); time <1-5 minutes. Zero or near-zero in many cases.
+    * BNB Smart Chain (BEP-20 for USDT): Fees ~$0.01-1 (sometimes free on binanceus promotions); time <1-5 minutes. Zero or near-zero in many cases.
 * Never use Ethereum (ERC-20) for transfers under $10k—fees often $0.87-5+ (volatile with congestion), times 5-15+ minutes. Avoid Avalanche unless specifically <$1 confirmed.
+  
+WHAT NEEDS TO BE DONE!!
+
+We are reorganizing the code into a clean **hexagonal / ports & adapters** structure without changing the strategy, settings, or nomenclature.
+- **adapters/**: Real implementations needed
+- exchanges/: wrappers.py, binanceus.py (ccxt), kraken.py (krakenex), coinbaseadvanced.py (cbpro), and coinabse
+
+- **core/**: Pure domain logic & calculations (no I/O, no external deps):
+- profit.py (net/gross profit, slippage, fees, baseline 0.5%)
+- risk.py (depth check, volatility slowdown) MERGED into health_monitor
+- thresholds.py (dynamic 0.4–1% threshold)
+- analysis.py (cvd, wykoff, volume profile, book analysis) MERGED into health_monitor!!
+
+- auction.py (chase_limit, sizing, iceberg)
+
+- order_executor.py (execution with risk checks)
+
+- adapters/feed.py (WS data + short cache, WS-only)
+- exchanges/wrappers.py (exchange REST/WS abstraction)
+
+- **domain/**: Pure data types
+- entities.py (Trade, Position, Signal, Mode)
+
+- values.py (Price, Amount, Symbol, Network – all Decimal)
+- aggregates.py (ArbOpportunity, Balance with drift)
+- **manager/** (coordinators – short names): mode.py, money.py, conversion.py, transfer.py, scanner.py, ws.py, signals.py, fees.py, staking.py, health.py
+
+- **ports/**: Interfaces
+- inbound/: signal.py, command.py
+- outbound/: prices.py, books.py, balances.py, execution.py, fees.py, ws.py
+
+MISSING:  - persistence/: state.py, logs.py
+
+-  **bots/**: Q.py, A.py, G.py (slim orchestration)
+
+- **main.py** (merged main + system_orchestrator.py)
+
+**Prioritized Tweaks** (must be integrated without changing strategy):
+1. Baseline 0.5% net profit threshold How? -> Dynamic 0.4–1% threshold using auction/market signals
+3. Depth check (top 5 volume > 2.5–5× trade size)
+4. Volatility slowdown (double cycle time on high range)
+5. We need live FRESH data : WebSocket-only for prices/books + short cache
+6. Use official Coinbase & Kraken Python libraries
+
+**Rules**:
+- Never change the strategy, settings, or existing nomenclature.
+- Use Decimal everywhere for money calculations.
+
+Crypto Arbitrage Strategy: Exploiting Market Inefficiencies for Consistent Returns
 
 
 ├── main.py                       #work in progress!
-    ├── system_orchestrator.py     # copied and pasted into main.py and deleted
+    ├── system_orchestrator.py     	# copied and pasted into main.py and deleted
 │
-├── config/                    	 # copied from Quant bot 3 manually!
+├── config/                    		
 │   ├── coins.json
-│   ├── settings.json              # we just edited and pushed
-│   └── .env                   	 # added  LATENCY_MODE='laptop'
-│
+│   ├── settings.json             	
+│   └── .env                   	 	# added  LATENCY_MODE='laptop'
 │
 │
 ├── adapters/
 │   ├── data
-│   │   ├── feed.py				DONE
-│   │   └── ws.py               DONE
+│   │   ├── feed.py				
+│   │   └── ws.py               
 │   │
-│   └─── persistance.         <---- is this necessary!!
+│   └─── persistance.         		# undone
 │   │
 │   └─── exchanges
-│       ├── wrappers.py           DONE
-│       ├── binanceus.py          DONE
-│       ├── coinbase_advanced.py  DONE
-│       ├── coinbase.py           DONE
-│       └── kraken.py             DONE
+│       ├── wrappers.py           
+│       ├── binanceus.py          
+│       ├── coinbase_advanced.py  
+│       ├── coinbase.py           
+│       └── kraken.py             
 │
 ├── bot/
 │   ├── Q.py						# arbitrage (cross + triangular)
 │   ├── A.py				        # buy/sell + staking/unstaking
 │   └── G.py                		# PAXG hedging & accumulation
 │
-│
 ├── core/
-│   ├── auction.py              DONE
-│   ├── health_monitor.py       DONE
-│   ├── order_executor.py       DONE
-│   ├── profit.py               DONE
-│   └── thresholds.py		    DONE
+│   ├── auction.py              
+│   ├── health_monitor.py       
+│   ├── order_executor.py       
+│   ├── profit.py               
+│   └── thresholds.py		    
 │
-│
-├── domain/                   # Are these even necessary anymore??
+├── domain/                  
 │   ├── aggregates.py			# *new
 │   ├── entities.py			    # *new
 │   └── values.py				# *new
 │
-│
-├── logs/						# i manually copied this from an older project (not connected)
+├── logs/					
 │   ├── errors/
 │   ├── performance/
 │   └── trades/
+│
 ├── manager/
-│   ├── fee.py	 		       # tracks all fees & zero fee allowances per account
-│   ├── mode.py         	   # remembers mode & announces, de/activates bots
-│   ├── money.py                DONE
-│   ├── converison.py           DONE
-│   ├── transfer.py        	    DONE
+│   ├── fee.py	 		       # tracks all fees & "zero-fee" allowances per account
+│   ├── mode.py         	   # state manager, broadcasts, de/activates bots
+│   ├── money.py               # tracks and manages every cent
+│   ├── converison.py          # Tries to keep drift below 15%
+│   ├── transfer.py        	   # needs to fetch cheapest and fastest network 
 │   ├── scanner.py      	   # notifies QBot of danger or opportunity in price.
-│   ├── signals.py	 	        DONE
-│   └── staking.py              DONE
+│   ├── signals.py	 	        
+│   └── staking.py              
 │
 │
-├── dashboard.py             		# my visual window (keep this!)
-├-- mini_dashboard.py	     		# a mini version of dashboard *(now = minidash.py)
-├
-│
+├── dashboard.py             	# my visual window (keep this!)
+├-- mini_dashboard.py	     	# a mini version of dashboard *(now = minidash.py needs integration into dashboard.py as a tab)
 │
 ├── utils/
-│   ├── helpers.py			    <--- is this used???
-│   ├── logger.py			    <--- is this used??
+│   ├── helpers.py			    
+│   ├── logger.py			    
 │   └── utils.py                # refactored to here.
 │
 ├── ports/						# new empty folder!!
