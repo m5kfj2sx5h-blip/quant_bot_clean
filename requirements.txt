@@ -1,36 +1,25 @@
-# Core trading
-ccxt>=4.0.0
-cryptography>=3.4.8
+# --- OFFICIAL EXCHANGE SDKs ---
+binance-connector
+python-kraken-sdk
+coinbase-advanced-py
 
-# Data handling
+# --- DATA & MATH ---
 pandas>=2.0.0
 numpy>=1.24.0
 
-# Async & Performance
-asyncio>=3.4.3
+# --- DATA FEEDS & ASYNC ---
+websockets>=12.0
 aiohttp>=3.8.0
 
-# Configuration
+# --- INFRASTRUCTURE & SECURITY ---
 python-dotenv>=1.0.0
+cryptography>=41.0.0
+ecdsa
+requests
 
-# Monitoring
-psutil>=5.9.0
-
-### missing imports ###
-
-websockets>=12.0
+# --- MONITORING & DASHBOARD ---
 streamlit>=1.28.0
 plotly>=5.17.0
-pandas>=2.0.0
-python-binance>=1.0.19
-krakenex>=2.1.0
-coinbase>=2.1.0
-asyncio>=3.4.3
-
-ecdsa
-psutil
-binance-connector-python
-coinbase-advanced-py
-python-kraken-sdk
-requests
+psutil>=5.9.0
+Flask>=1.0
 apscheduler
