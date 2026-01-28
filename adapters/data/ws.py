@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import websockets
+import ssl
+import certifi
 from dotenv import load_dotenv
 import os
 
@@ -18,7 +20,8 @@ class BinanceUSWebSocket:
 
     async def connect(self):
         try:
-            self.ws = await websockets.connect(self.uri)
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
             self.logger.info("✅ Binance.US WebSocket connected")
             asyncio.create_task(self._listen())
         except Exception as e:
@@ -37,7 +40,7 @@ class BinanceUSWebSocket:
         msg_type = data.get('e')
         if msg_type == 'depthUpdate':
             book_data = {
-                'exchange': 'binance_us',
+                'exchange': 'binanceus',
                 'type': 'orderbook',
                 'bids': [[float(b[0]), float(b[1])] for b in data.get('b', [])[:10]],
                 'asks': [[float(a[0]), float(a[1])] for a in data.get('a', [])[:10]],
@@ -46,7 +49,7 @@ class BinanceUSWebSocket:
             await self._notify_callbacks(book_data)
         elif msg_type == 'trade':
             trade_data = {
-                'exchange': 'binance_us',
+                'exchange': 'binanceus',
                 'type': 'trade',
                 'price': float(data.get('p', 0)),
                 'quantity': float(data.get('q', 0)),
@@ -76,7 +79,8 @@ class KrakenWebSocket:
 
     async def connect(self):
         try:
-            self.ws = await websockets.connect(self.uri)
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
             self.logger.info("✅ Kraken WebSocket connected")
             subscribe_msg = {
                 "event": "subscribe",
@@ -125,7 +129,8 @@ class CoinbaseWebSocket:
 
     async def connect(self):
         try:
-            self.ws = await websockets.connect(self.uri)
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
             self.logger.info("✅ Coinbase (Regular) WebSocket connected")
             subscribe_msg = {
                 "type": "subscribe",
@@ -179,7 +184,8 @@ class CoinbaseAdvancedWebSocket:
 
     async def connect(self):
         try:
-            self.ws = await websockets.connect(self.uri)
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
             self.logger.info("✅ Coinbase Advanced WebSocket connected")
             # Official pattern for Advanced Trade
             subscribe_msg = {

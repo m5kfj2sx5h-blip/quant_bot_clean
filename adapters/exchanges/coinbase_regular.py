@@ -35,12 +35,33 @@ class CoinbaseRegularAdapter:
                 'raw': {}
             }
 
-    def get_balance(self, asset: str) -> Decimal:
-        accounts = self.client.get_accounts()
-        for acc in accounts.accounts:
-            if acc.currency == asset.upper():
-                return Decimal(acc.available_balance.value)
-        return Decimal('0')
+    def get_balance(self, asset: Optional[str] = None) -> Any:
+        """Fetch balance for one or all assets."""
+        try:
+            response = self.client.get_accounts()
+            accounts = getattr(response, 'accounts', [])
+            
+            if asset:
+                for acc in accounts:
+                    currency = getattr(acc, 'currency', acc.get('currency') if isinstance(acc, dict) else None)
+                    if currency == asset.upper():
+                        bal = getattr(acc, 'available_balance', acc.get('available_balance') if isinstance(acc, dict) else None)
+                        if isinstance(bal, dict):
+                            return Decimal(str(bal.get('value', '0')))
+                        return Decimal(str(getattr(bal, 'value', '0')))
+                return Decimal('0')
+            else:
+                balances = {}
+                for acc in accounts:
+                    currency = getattr(acc, 'currency', acc.get('currency') if isinstance(acc, dict) else None)
+                    bal = getattr(acc, 'available_balance', acc.get('available_balance') if isinstance(acc, dict) else None)
+                    if isinstance(bal, dict):
+                        balances[currency] = Decimal(str(bal.get('value', '0')))
+                    else:
+                        balances[currency] = Decimal(str(getattr(bal, 'value', '0')))
+                return balances
+        except Exception:
+            return Decimal('0') if asset else {}
 
     def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
         product_id = str(symbol).replace('/', '-')
@@ -74,14 +95,32 @@ class CoinbaseRegularAdapter:
         except:
             return False
 
-    def stake(self, asset: str, amount: Decimal) -> Dict:
-        """Staking not supported on legacy Wallet API."""
-        return {'success': False, 'error': 'Not supported'}
+    def get_supported_pairs(self) -> List[Symbol]:
+        try:
+            response = self.client.get_products()
+            products = getattr(response, 'products', [])
+            return [Symbol(p.base_currency, p.quote_currency) for p in products if p.status == 'online' and ('USDT' in p.quote_currency or 'USDC' in p.quote_currency or 'USD' in p.quote_currency)]
+        except Exception:
+            return [Symbol('BTC', 'USD')]
 
-    def unstake(self, asset: str, amount: Decimal) -> Dict:
-        """Staking not supported on legacy Wallet API."""
-        return {'success': False, 'error': 'Not supported'}
+    def fetch_deposit_address(self, asset: str, network: Optional[str] = None) -> Dict:
+        """Fetch deposit address for Coinbase account."""
+        try:
+            response = self.client.get_accounts()
+            accounts = getattr(response, 'accounts', [])
+            account_id = next(acc.uuid for acc in accounts if acc.currency == asset.upper())
+            addr_res = self.client.create_address(account_id=account_id)
+            return {'address': getattr(addr_res, 'address', addr_res.get('address') if isinstance(addr_res, dict) else None)}
+        except Exception:
+            return {'address': None}
 
     def get_staking_assets(self) -> List[Dict]:
         """Staking not supported on legacy Wallet API."""
         return []
+
+    def withdraw(self, asset: str, amount: Decimal, address: str, network: str = 'base') -> Dict:
+        """Execute withdrawal from Coinbase."""
+        try:
+            return self.client.create_withdrawal(amount=str(amount), asset=asset, destination=address, network=network)
+        except Exception as e:
+            return {'success': False, 'error': str(e)}

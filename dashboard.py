@@ -829,7 +829,7 @@ def main():
     
     exchange_cards = st.columns(3)
     
-    for idx, exchange_name in enumerate(['KRAKEN', 'BINANCE', 'COINBASE']):
+    for idx, exchange_name in enumerate(['KRAKEN', 'BINANCEUS', 'COINBASE']):
         with exchange_cards[idx]:
             exchange_price = next((p for p in price_data if p['exchange'] == exchange_name), None)
             exchange_balance = next((b for b in balance_data if b['Exchange'] == exchange_name), None)

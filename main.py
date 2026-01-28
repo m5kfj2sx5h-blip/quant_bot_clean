@@ -88,7 +88,7 @@ class SystemCoordinator:
         # Set up a fake exchange config if it's missing to allow data_feed to initialize enabled exchanges
         if 'exchanges' not in self.config:
             self.config['exchanges'] = {
-                'binance': {'enabled': True},
+                'binanceus': {'enabled': True},
                 'kraken': {'enabled': True},
                 'coinbase': {'enabled': True},
                 'coinbase_advanced': {'enabled': True}

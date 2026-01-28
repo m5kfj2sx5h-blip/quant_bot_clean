@@ -1,6 +1,8 @@
 import logging
 import time
+import asyncio
 from typing import Dict, Optional
+from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN
 from core.profit import calculate_net_profit, estimate_slippage
 from dotenv import load_dotenv
@@ -81,7 +83,7 @@ class OrderExecutor:
         )
         execution_time = time.time() - start_time
         trade_record = {
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(timezone.utc),
             'buy_exchange': buy_exchange,
             'sell_exchange': sell_exchange,
             'symbol': symbol,

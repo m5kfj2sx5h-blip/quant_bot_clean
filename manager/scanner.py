@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import Dict, List, Optional, Tuple, Any
+from collections import deque
 import numpy as np
 from dataclasses import dataclass
 from enum import Enum
@@ -15,6 +16,11 @@ class AuctionState(Enum):
     CLOSED = "closed"
     PRE_OPEN = "pre_open"
     POST_CLOSE = "post_close"
+    BALANCED = "balanced"
+    IMBALANCED_BUYING = "imbalanced_buying"
+    IMBALANCED_SELLING = "imbalanced_selling"
+    ACCEPTING = "accepting"
+    REJECTING = "rejecting"
 
 
 class MarketPhase(Enum):
@@ -24,6 +30,9 @@ class MarketPhase(Enum):
     TREND_UP = "trend_up"
     TREND_DOWN = "trend_down"
     SIDEWAYS = "sideways"
+    MARKUP = "markup"
+    MARKDOWN = "markdown"
+    UNKNOWN = "unknown"
 
 
 @dataclass

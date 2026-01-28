@@ -66,7 +66,7 @@ class AuctionContextModule:
 
             # Calculate volume strength (simplified)
             total_vol = bid_vol + ask_vol
-            context.volume_strength = min(total_vol / 100.0, 1.0)  # Normalized
+            context.volume_strength = float(min(total_vol / Decimal('100.0'), Decimal('1.0')))  # Normalized
 
             self.logger.debug(f"Auction Analysis: {context.auction_state.value} "
                               f"Score: {context.auction_imbalance_score:.3f} "

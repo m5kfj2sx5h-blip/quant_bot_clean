@@ -18,12 +18,16 @@ class BinanceUSAdapter:
     def get_name(self) -> str:
         return "binanceus"
 
-    def get_balance(self, asset: str) -> Decimal:
-        balance = self.client.account()['balances']
-        for b in balance:
-            if b['asset'] == asset.upper():
-                return Decimal(b['free'])
-        return Decimal('0')
+    def get_balance(self, asset: Optional[str] = None) -> Any:
+        """Fetch balance for one or all assets."""
+        account = self.client.account()
+        if asset:
+            for b in account['balances']:
+                if b['asset'] == asset.upper():
+                    return Decimal(b['free'])
+            return Decimal('0')
+        else:
+            return {b['asset']: Decimal(b['free']) for b in account['balances']}
 
     def get_all_balances(self) -> Dict[str, Dict[str, Decimal]]:
         """Fetch all balances in one call."""
@@ -136,16 +140,25 @@ class BinanceUSAdapter:
 
     def get_supported_pairs(self) -> List[Symbol]:
         exchange_info = self.client.exchange_info()
-        return [Symbol(s['baseAsset'] + '/' + s['quoteAsset']) for s in exchange_info['symbols'] if s['status'] == 'TRADING' and ('USDT' in s['quoteAsset'] or 'USDC' in s['quoteAsset'] or 'USD' in s['quoteAsset'])]
+        return [Symbol(s['baseAsset'], s['quoteAsset']) for s in exchange_info['symbols'] if s['status'] == 'TRADING' and ('USDT' in s['quoteAsset'] or 'USDC' in s['quoteAsset'] or 'USD' in s['quoteAsset'])]
 
     def stake(self, asset: str, amount: Decimal) -> Dict:
-        """Stake asset on Binance.US"""
-        return self.client.staking_subscribe(product='STAKING', asset=asset.upper(), amount=float(amount))
+        """Stake asset on Binance.US with fallback."""
+        try:
+            return self.client.staking_subscribe(product='STAKING', asset=asset.upper(), amount=float(amount))
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
     def unstake(self, asset: str, amount: Decimal) -> Dict:
-        """Unstake asset on Binance.US"""
-        return self.client.staking_redeem(product='STAKING', asset=asset.upper(), amount=float(amount))
+        """Unstake asset on Binance.US with fallback."""
+        try:
+            return self.client.staking_redeem(product='STAKING', asset=asset.upper(), amount=float(amount))
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
     def get_staking_assets(self) -> List[Dict]:
-        """Fetch stakable assets and their APRs."""
-        return self.client.staking_product_list(product='STAKING')
+        """Fetch stakable assets and their APRs with fallback."""
+        try:
+            return self.client.staking_product_list(product='STAKING')
+        except Exception:
+            return []

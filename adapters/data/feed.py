@@ -82,7 +82,7 @@ class DataFeed:
         
         # Last resort: Try to find ANY price in registry
         if self.registry:
-            for ex in ['binance', 'kraken', 'coinbase', 'coinbase_advanced']:
+            for ex in ['binanceus', 'kraken', 'coinbase', 'coinbase_advanced']:
                 book = self.registry.get_order_book(ex, 'BTC/USDT') or self.registry.get_order_book(ex, 'BTC/USD')
                 if book:
                     return float(book.get('bid', book['bids'][0]['price']))
@@ -168,11 +168,11 @@ class DataFeed:
             if not config.get('enabled', False):
                 continue
             try:
-                if name == 'binance':
+                if name == 'binanceus':
                     binance_ws = BinanceUSWebSocket("btcusdt")
                     await binance_ws.connect()
                     binance_ws.subscribe(self._handle_websocket_data)
-                    self.ws_connections['binance'] = binance_ws
+                    self.ws_connections['binanceus'] = binance_ws
                 elif name == 'kraken':
                     kraken_ws = KrakenWebSocket("XBT/USD")
                     await kraken_ws.connect()
@@ -199,9 +199,9 @@ class DataFeed:
         try:
             exchange = data.get('exchange', '')
             data_type = data.get('type', '')
+            best_bid, best_ask = None, None
             if data_type == 'orderbook':
-                if exchange == 'binance_us':
-                    exchange = 'binance'
+                if exchange == 'binanceus':
                     symbol = 'BTC/USDT'
                 elif exchange == 'kraken':
                     symbol = 'BTC/USD'

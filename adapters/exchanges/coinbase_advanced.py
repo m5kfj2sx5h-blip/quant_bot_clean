@@ -38,25 +38,45 @@ class CoinbaseAdvancedAdapter:
             'raw': summary
         }
 
-    def get_balance(self, asset: str) -> Decimal:
-        accounts = self.client.get_accounts()
-        for acc in accounts:
-            if acc.currency == asset.upper():
-                return Decimal(acc.available_balance.value)
-        return Decimal('0')
+    def get_balance(self, asset: Optional[str] = None) -> Any:
+        """Fetch balance for one or all assets."""
+        try:
+            response = self.client.get_accounts()
+            accounts = getattr(response, 'accounts', [])
+            
+            if asset:
+                for acc in accounts:
+                    if acc and getattr(acc, 'currency', None) == asset.upper():
+                        return Decimal(str(acc.available_balance.value))
+                return Decimal('0')
+            else:
+                balances = {}
+                for acc in accounts:
+                    if acc:
+                        currency = getattr(acc, 'currency', None)
+                        if currency:
+                            balances[currency] = Decimal(str(acc.available_balance.value))
+                return balances
+        except Exception:
+            return Decimal('0') if asset else {}
 
     def get_all_balances(self) -> Dict[str, Dict[str, Decimal]]:
         """Fetch all accounts from Coinbase Advanced."""
-        accounts = self.client.get_accounts()
-        balances = {}
-        for acc in accounts:
-            total = Decimal(acc.hold.value) + Decimal(acc.available_balance.value)
-            if total > 0:
-                balances[acc.currency.upper()] = {
-                    'free': Decimal(acc.available_balance.value),
-                    'total': total
-                }
-        return balances
+        try:
+            response = self.client.get_accounts()
+            accounts = getattr(response, 'accounts', [])
+            balances = {}
+            for acc in accounts:
+                if acc:
+                    total = Decimal(str(acc.hold.value)) + Decimal(str(acc.available_balance.value))
+                    if total > 0:
+                        balances[acc.currency.upper()] = {
+                            'free': Decimal(str(acc.available_balance.value)),
+                            'total': total
+                        }
+            return balances
+        except Exception:
+            return {}
 
     def get_order_book(self, symbol: Symbol, limit: int = 5) -> Dict[str, List[Dict[str, Decimal]]]:
         product_id = str(symbol).replace('/', '-')
@@ -91,68 +111,86 @@ class CoinbaseAdvancedAdapter:
             return False
 
     def get_supported_pairs(self) -> List[Symbol]:
-        products = self.client.get_products()
-        return [Symbol(p.base_currency + '/' + p.quote_currency) for p in products if p.status == 'online' and ('USDT' in p.quote_currency or 'USDC' in p.quote_currency or 'USD' in p.quote_currency)]
+        try:
+            response = self.client.get_products()
+            products = getattr(response, 'products', [])
+            return [Symbol(p.base_currency, p.quote_currency) for p in products if p.status == 'online' and ('USDT' in p.quote_currency or 'USDC' in p.quote_currency or 'USD' in p.quote_currency)]
+        except Exception:
+            return [Symbol('BTC', 'USD')]
 
     def get_market_metadata(self) -> Dict[str, Any]:
         """Fetch all Coinbase Advanced products metadata."""
-        products = self.client.get_products()
-        markets = {}
-        for p in products:
-            if p.status == 'online':
-                symbol = f"{p.base_currency}/{p.quote_currency}"
-                markets[symbol] = {
-                    'base': p.base_currency,
-                    'quote': p.quote_currency,
-                    'precision': {
-                        'amount': p.base_increment,
-                        'price': p.quote_increment
+        try:
+            response = self.client.get_products()
+            products = getattr(response, 'products', [])
+            markets = {}
+            for p in products:
+                if p and getattr(p, 'status', None) == 'online':
+                    symbol = f"{p.base_currency}/{p.quote_currency}"
+                    markets[symbol] = {
+                        'base': p.base_currency,
+                        'quote': p.quote_currency,
+                        'precision': {
+                            'amount': p.base_increment,
+                            'price': p.quote_increment
+                        }
                     }
-                }
-        return markets
+            return markets
+        except Exception:
+            return {}
 
     def get_asset_metadata(self) -> Dict[str, Any]:
         """Fetch all stakable and tradable assets dynamically from Coinbase."""
-        products = self.client.get_products()
-        assets = {}
-        
-        # Aggregate unique base currencies
-        unique_assets = set()
-        for p in products:
-            if p.status == 'online':
-                unique_assets.add(p.base_currency)
-                unique_assets.add(p.quote_currency)
-        
-        for asset in unique_assets:
-            assets[asset] = {
-                'name': asset,
-                'can_stake': False, # Will be updated if staking assets found
-                'networks': {
-                    'BASE': {
-                        'withdraw_fee': Decimal('0.00'), # Base is preferred
-                        'withdraw_enabled': True,
-                        'deposit_enabled': True
+        try:
+            response = self.client.get_products()
+            products = getattr(response, 'products', [])
+            assets = {}
+            
+            # Aggregate unique base currencies
+            unique_assets = set()
+            for p in products:
+                if p and getattr(p, 'status', None) == 'online':
+                    unique_assets.add(p.base_currency)
+                    unique_assets.add(p.quote_currency)
+            
+            for asset in unique_assets:
+                assets[asset] = {
+                    'name': asset,
+                    'can_stake': False, # Will be updated if staking assets found
+                    'networks': {
+                        'BASE': {
+                            'withdraw_fee': Decimal('0.00'), # Base is preferred
+                            'withdraw_enabled': True,
+                            'deposit_enabled': True
+                        }
                     }
                 }
-            }
-            
-        # Try to discover staking assets
-        try:
-            staking_options = self.client.get_staking_options()
-            for opt in staking_options:
-                asset = opt.get('asset')
-                if asset in assets:
-                    assets[asset]['can_stake'] = True
-        except:
-            pass
-            
-        return assets
+                
+            # Try to discover staking assets
+            try:
+                staking_response = self.client.get_staking_options()
+                staking_options = getattr(staking_response, 'staking_options', [])
+                for opt in staking_options:
+                    asset = getattr(opt, 'asset', None)
+                    if asset in assets:
+                        assets[asset]['can_stake'] = True
+            except:
+                pass
+                
+            return assets
+        except Exception:
+            return {}
 
-    def fetch_deposit_address(self, asset: str) -> Dict:
+    def fetch_deposit_address(self, asset: str, network: Optional[str] = None) -> Dict:
         """Fetch deposit address for Coinbase account."""
-        accounts = self.client.get_accounts()
-        account_id = next(acc.uuid for acc in accounts if acc.currency == asset.upper())
-        return self.client.create_address(account_id=account_id)
+        try:
+            accounts_res = self.client.get_accounts()
+            accounts = getattr(accounts_res, 'accounts', [])
+            account_id = next(acc.uuid for acc in accounts if getattr(acc, 'currency', None) == asset.upper())
+            addr_res = self.client.create_address(account_id=account_id)
+            return {'address': getattr(addr_res, 'address', addr_res.get('address') if isinstance(addr_res, dict) else None)}
+        except Exception:
+            return {'address': None}
 
     def withdraw(self, asset: str, amount: Decimal, address: str, network: str = 'base') -> Dict:
         """Execute withdrawal from Coinbase Advanced."""
