@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from domain.entities import TradingMode, MacroSignal
 from typing import Optional, Any
@@ -42,7 +42,7 @@ class ModeManager:
                 logger.warning(f"Macro switch blocked: last switch {self.last_switch_date}, cooldown: {self.macro_cycle_duration}")
                 return False
 
-            macro_signal = MacroSignal(timestamp=datetime.utcnow(), mode=mode, confidence=confidence, source="tradingview")
+            macro_signal = MacroSignal(timestamp=datetime.now(timezone.utc), mode=mode, confidence=confidence, source="tradingview")
             
             success = True
             if self.portfolio:
@@ -50,7 +50,7 @@ class ModeManager:
             
             if success:
                 self.current_mode = mode
-                self.last_switch_date = datetime.utcnow()
+                self.last_switch_date = datetime.now(timezone.utc)
                 logger.critical(f"=== MACRO SWITCH: {mode.value.upper()} ===")
                 if mode == TradingMode.GOLD_MODE and self.portfolio:
                     await self._calculate_gold_conversion_target()
@@ -62,7 +62,7 @@ class ModeManager:
     def _can_switch_macro(self) -> bool:
         if not self.last_switch_date:
             return True
-        time_since_last = datetime.utcnow() - self.last_switch_date
+        time_since_last = datetime.now(timezone.utc) - self.last_switch_date
         return time_since_last >= self.macro_cycle_duration
 
     def _verify_signature(self, signal_data: dict) -> bool:

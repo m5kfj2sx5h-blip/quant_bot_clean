@@ -2,7 +2,7 @@
 """
 RISK MANAGER, HEALTH MONITOR & PERFORMANCE TELEMETRY SYSTEM
 Version: 3.0.3 | Component: System Health & Optimization
-Author: |\\/||| | Last Updated: 2026-01-22 00:12
+Author: dj3bo | Last Updated: 2026-01-28 06:50
 
 Features:
 - Real-time performance metrics collection
@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Callable, List, Any, Optional
 from decimal import Decimal
 import os
@@ -525,7 +525,7 @@ class HealthMonitor:
         """Record heartbeat from exchange without blocking"""
         self.exchange_health[exchange_name] = ExchangeHealth(
             exchange_name=exchange_name,
-            last_heartbeat=datetime.utcnow(),
+            last_heartbeat=datetime.now(timezone.utc),
             api_response_time_ms=response_time_ms
         )
 

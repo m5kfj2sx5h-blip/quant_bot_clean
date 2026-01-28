@@ -7,7 +7,7 @@ import sys
 import time
 import traceback
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
@@ -156,7 +156,7 @@ class SystemCoordinator:
         success = await self.mode_manager.handle_tradingview_signal({
             'mode': mode_str.lower() + '_mode',
             'confidence': 1.0,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         if success:
             self.persistence_manager.update_portfolio_state(self.portfolio, self.mode_manager.get_current_mode().value)

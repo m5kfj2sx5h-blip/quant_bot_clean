@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 class TradingMode(Enum):
     BTC_MODE = "btc_mode"
@@ -91,7 +91,7 @@ class MacroSignal:
     source: str = "tradingview"
 
     def is_valid(self) -> bool:
-        age = datetime.utcnow() - self.timestamp
+        age = datetime.now(timezone.utc) - self.timestamp
         return age.seconds < 3600
 
 @dataclass

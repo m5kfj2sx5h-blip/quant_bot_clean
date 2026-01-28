@@ -4,7 +4,7 @@ Aggregate roots - maintain consistency boundaries
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from domain.entities import Symbol, Balance, Order, TradingMode, MacroSignal
 
@@ -46,7 +46,7 @@ class Portfolio:
             return False
 
         self.macro_signal = signal
-        self.last_macro_switch = datetime.utcnow()
+        self.last_macro_switch = datetime.now(timezone.utc)
 
         # Recalculate gold target when macro switches
         if signal.mode == TradingMode.GOLD_MODE:
@@ -62,7 +62,7 @@ class Portfolio:
             return True
 
         cooldown = timedelta(hours=24)  # 24 hour cooldown
-        return datetime.utcnow() - self.last_macro_switch > cooldown
+        return datetime.now(timezone.utc) - self.last_macro_switch > cooldown
 
     def record_arbitrage_profit(self, profit_usd: Decimal):
         """Record profit and update winning trade stats"""
@@ -109,5 +109,5 @@ class ExchangeHealth:
 
     def is_alive(self, timeout_seconds: int = 60) -> bool:
         """Check if exchange is responding"""
-        age = datetime.utcnow() - self.last_heartbeat
+        age = datetime.now(timezone.utc) - self.last_heartbeat
         return age.seconds < timeout_seconds and self.is_healthy

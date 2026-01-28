@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any
 import logging
 
@@ -19,7 +19,7 @@ class PerformanceAnalyzer:
                      exchange_pair: str, trade_type: str = 'ARB'):
         """Record a completed trade"""
         self.trades.append({
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(timezone.utc),
             'symbol': symbol,
             'profit_usd': float(profit_usd),
             'duration_seconds': duration_seconds,
@@ -47,8 +47,8 @@ class PerformanceAnalyzer:
             'best_trade': df['profit_usd'].max(),
             'worst_trade': df['profit_usd'].min(),
             'sharpe_ratio': self._calculate_sharpe_ratio(df),
-            'last_24h_trades': len(df[df['timestamp'] > datetime.utcnow() - timedelta(hours=24)]),
-            'last_24h_profit': df[df['timestamp'] > datetime.utcnow() - timedelta(hours=24)]['profit_usd'].sum(),
+            'last_24h_trades': len(df[df['timestamp'] > datetime.now(timezone.utc) - timedelta(hours=24)]),
+            'last_24h_profit': df[df['timestamp'] > datetime.now(timezone.utc) - timedelta(hours=24)]['profit_usd'].sum(),
         }
 
     def _calculate_sharpe_ratio(self, df: pd.DataFrame) -> float:
