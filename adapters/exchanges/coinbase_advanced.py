@@ -16,8 +16,8 @@ class CoinbaseAdvancedAdapter:
         return pem_key.strip()
 
     def __init__(self):
-        api_key = os.getenv('COINBASE_ADVANCED_API_KEY')
-        api_secret = os.getenv('COINBASE_ADVANCED_API_SECRET')
+        api_key = os.getenv('COINBASEADV_KEY')
+        api_secret = os.getenv('COINBASEADV_SECRET')
         self.client = CoinbaseAdvancedClient(api_key=api_key, api_secret=api_secret)
 
     def get_name(self) -> str:

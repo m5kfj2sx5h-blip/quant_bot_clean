@@ -10,8 +10,8 @@ load_dotenv()
 
 class CoinbaseRegularAdapter:
     def __init__(self):
-        api_key = os.getenv('COINBASE_API_KEY')
-        api_secret = os.getenv('COINBASE_API_SECRET')
+        api_key = os.getenv('COINBASE_KEY')
+        api_secret = os.getenv('COINBASE_SECRET')
         self.client = CoinbaseClient(api_key=api_key, api_secret=api_secret)
 
     def get_name(self) -> str:

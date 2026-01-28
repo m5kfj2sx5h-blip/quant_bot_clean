@@ -10,8 +10,8 @@ load_dotenv()
 
 class KrakenAdapter:
     def __init__(self):
-        api_key = os.getenv('KRAKEN_API_KEY')
-        api_secret = os.getenv('KRAKEN_API_SECRET')
+        api_key = os.getenv('KRAKEN_KEY')
+        api_secret = os.getenv('KRAKEN_SECRET')
         self.client = KrakenSpot(key=api_key, secret=api_secret)
 
     def get_name(self) -> str:
