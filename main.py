@@ -84,7 +84,7 @@ class SystemCoordinator:
         }
 
         # 3. Initialize Feed & Registry
-        self.data_feed = DataFeed(self.config, logger, self.market_registry)
+        self.data_feed = DataFeed(self.config, logger, self.market_registry, self.persistence_manager)
         # Set up a fake exchange config if it's missing to allow data_feed to initialize enabled exchanges
         if 'exchanges' not in self.config:
             self.config['exchanges'] = {

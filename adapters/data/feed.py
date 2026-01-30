@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 class DataFeed:
     """ UNIFIED DATA ACQUISITION LAYER - WEB SOCKET ONLY """
-    def __init__(self, config: Dict, main_logger: logging.Logger, registry: Any = None):
+    def __init__(self, config: Dict, main_logger: logging.Logger, registry: Any = None, persistence_manager: Any = None):
         self.config = config
         self.logger = main_logger
         self.registry = registry
+        self.persistence_manager = persistence_manager
         self.exchanges = {}
         self.price_data = {}
         self.market_contexts = {}
@@ -114,6 +115,23 @@ class DataFeed:
             context = self.auction_analyzer.analyze_order_book(bids, asks, last_price, context)
             self._update_market_phase(context)
             self._update_execution_confidence(context)
+            
+            # Persist valuable rolling stats to SQLite for Dashboard
+            if self.persistence_manager and context.auction_state != AuctionState.BALANCED:
+                try:
+                    metrics = {
+                        'symbol': symbol,
+                        'exchange': exchange,
+                        'volatility': float(context.volatility) if hasattr(context, 'volatility') else 0.0,
+                        'imbalance': float(context.auction_imbalance_score),
+                        'sentiment': float(context.market_sentiment),
+                        'phase': str(context.market_phase.value) if hasattr(context.market_phase, 'value') else str(context.market_phase),
+                        'whale_score': float(context.get_whale_activity().get('score', 0.0))
+                    }
+                    self.persistence_manager.save_market_metrics(metrics)
+                except Exception as e:
+                    self.logger.debug(f"Failed to persist metrics for {symbol}: {e}")
+
             if context.auction_state != AuctionState.BALANCED:
                 self.logger.debug(f"Market Context [{symbol}]: {context.to_dict()}")
         except Exception as e:
@@ -270,9 +288,71 @@ class DataFeed:
             self.logger.error(f"Reconnect failed for {name}: {e}")
             self.connection_health[name]['errors'] += 1
 
-    async def _maintain_websocket_connections(self):
-        while self.running:
             for name, status in list(self.connection_health.items()):
                 if status['status'] == 'failed':
                     await self._reconnect(name)
             await asyncio.sleep(60)
+
+    # --- AGGREGATOR INTERFACE FOR ALPHA QUADRANT ANALYZER ---
+    def get_combined_book(self, symbol: str) -> Dict:
+        """Helper to get best book across exchanges"""
+        # For simplicity, returning the first available book or aggregating
+        # In this architecture, price_data is organized by symbol -> exchange -> data
+        if symbol not in self.price_data:
+            return {}
+        
+        # Aggregate bids/asks
+        # This is a simplified view
+        best_data = None
+        for ex, data in self.price_data[symbol].items():
+            best_data = data # Just take one for now
+            break
+        return best_data or {}
+
+    def get_depth_ratio(self, symbol: str) -> float:
+        """Calculate Bid Vol / Ask Vol ratio."""
+        try:
+            data = self.get_combined_book(symbol)
+            if not data: return 1.0
+            
+            bid_vol = sum(d['amount'] for d in data.get('bids', []))
+            ask_vol = sum(d['amount'] for d in data.get('asks', []))
+            
+            if ask_vol == 0: return 2.0
+            return float(bid_vol / ask_vol)
+        except:
+            return 1.0
+
+    def get_book_imbalance(self, symbol: str) -> float:
+        """Get auction imbalance from MarketContext."""
+        ctx = self.market_contexts.get(symbol)
+        if ctx:
+             return float(ctx.auction_imbalance_score)
+        return 0.0
+
+    def get_price_momentum(self, symbol: str) -> float:
+        """Calculate simple ROC momentum."""
+        ctx = self.market_contexts.get(symbol)
+        if ctx and hasattr(ctx, 'volatility'):
+             # Use recent volatility as a proxy for momentum magnitude for now, 
+             # or use auction state
+             if ctx.market_phase == MarketPhase.MARKUP: return 0.5
+             if ctx.market_phase == MarketPhase.MARKDOWN: return -0.5
+        return 0.0
+
+    def get_market_means(self) -> Dict[str, float]:
+        """Calculate market-wide averages for relative scoring."""
+        depths = []
+        imbalances = []
+        
+        for sym in self.market_contexts:
+            depths.append(self.get_depth_ratio(sym))
+            imbalances.append(abs(self.get_book_imbalance(sym)))
+            
+        if not depths:
+            return {'depth_ratio_mean': 1.0, 'imbalance_mean': 0.0}
+            
+        return {
+            'depth_ratio_mean': statistics.mean(depths),
+            'imbalance_mean': statistics.mean(imbalances)
+        }

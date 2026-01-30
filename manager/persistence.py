@@ -91,6 +91,35 @@ class PersistenceManager:
                 )
             """)
             
+            # 6. Scan Audit (Real-time Scan Intelligence)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS scan_audit (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    scan_type TEXT, -- CROSS or TRI
+                    pairs_scanned INTEGER,
+                    opportunities_found INTEGER,
+                    top_opportunity TEXT, -- JSON string
+                    rejection_reason TEXT -- JSON string (summary of rejections)
+                )
+            """)
+
+            # 7. Market Metrics (Rolling Stats Persistence)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS market_metrics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT,
+                    exchange TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    volatility REAL,
+                    imbalance REAL,
+                    sentiment REAL,
+                    phase TEXT,
+                    whale_score REAL,
+                    FOREIGN KEY(symbol) REFERENCES trades(symbol)
+                )
+            """)
+            
             conn.commit()
             logger.info(f"🗄️ SQLite Database initialized at {self.db_path}")
 
@@ -283,3 +312,81 @@ class PersistenceManager:
             cursor = conn.cursor()
             cursor.execute("SELECT net_profit_usd FROM trades WHERE net_profit_usd IS NOT NULL")
             return [Decimal(row[0]) for row in cursor.fetchall()]
+
+    def save_scan_audit(self, scan_data: Dict[str, Any]):
+        """Save the result of a scan cycle."""
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO scan_audit (
+                    scan_type, pairs_scanned, opportunities_found, top_opportunity, rejection_reason
+                ) VALUES (?, ?, ?, ?, ?)
+            """, (
+                scan_data.get('scan_type', 'CROSS'),
+                scan_data.get('pairs_scanned', 0),
+                scan_data.get('opportunities_found', 0),
+                json.dumps(scan_data.get('top_opportunity', {})),
+                json.dumps(scan_data.get('rejection_reason', {}))
+            ))
+            conn.commit()
+
+    def get_latest_scan_audit(self) -> Optional[Dict[str, Any]]:
+        """Get the most recent scan audit for the dashboard."""
+        import json
+        with self._get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM scan_audit ORDER BY timestamp DESC LIMIT 1")
+            row = cursor.fetchone()
+            if row:
+                data = dict(row)
+                data['top_opportunity'] = json.loads(data['top_opportunity'])
+                data['rejection_reason'] = json.loads(data['rejection_reason'])
+                return data
+        return None
+
+    def save_market_metrics(self, metrics: Dict[str, Any]):
+        """Save detailed market metrics (volatility, imbalance, etc)."""
+        if not metrics:
+            return
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO market_metrics (
+                    symbol, exchange, volatility, imbalance, sentiment, phase, whale_score
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                metrics.get('symbol'),
+                metrics.get('exchange', 'aggregated'),
+                metrics.get('volatility', 0.0),
+                metrics.get('imbalance', 0.0),
+                metrics.get('sentiment', 0.0),
+                metrics.get('phase', 'UNKNOWN'),
+                metrics.get('whale_score', 0.0)
+            ))
+            conn.commit()
+
+    def get_latest_market_metrics(self, symbol: str = None) -> List[Dict[str, Any]]:
+        """Get latest market metrics, optionally filtered by symbol."""
+        with self._get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            if symbol:
+                cursor.execute("""
+                    SELECT * FROM market_metrics 
+                    WHERE symbol = ? 
+                    ORDER BY timestamp DESC LIMIT 1
+                """, (symbol,))
+            else:
+                # Get latest for each symbol (simulated via group by or simple limit)
+                # For dashboard overview, just getting recent 50 is fine
+                cursor.execute("""
+                    SELECT * FROM market_metrics 
+                    ORDER BY timestamp DESC LIMIT 50
+                """)
+                
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]

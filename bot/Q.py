@@ -11,6 +11,8 @@ from core.health_monitor import HealthMonitor
 from core.order_executor import OrderExecutor
 from core.liquidity import LiquidityAnalyzer
 from manager.scanner import MarketContext, AlphaQuadrantAnalyzer
+from core.liquidity import LiquidityAnalyzer
+from manager.scanner import MarketContext, AlphaQuadrantAnalyzer
 from manager.sentiment import SentimentAnalyzer
 
 load_dotenv('config/.env')
@@ -72,18 +74,13 @@ class QBot:
             return []
 
         # Ensure MarketData is ready (shared with scanning)
-        if not hasattr(self, 'market_data'):
-            from manager.market_data import MarketData
-            self.market_data = MarketData() # This might be empty if not updated!
-            # CRITICAL: market_data needs to be fed.
-            # In scan_cross_exchange we feed it. 
-            # If this runs independently, it might see empty data.
-            # Solution: We should rely on the shared `self.market_registry` if possible, 
-            # OR ensure `scan_cross_exchange` runs first to populate `self.market_data`.
-            # For now, we assume `scan_cross_exchange` is running.
+        # Ensure DataFeed is available as aggregator
+        if not self.data_feed:
+            logger.warning("DataFeed not available for Alpha Quadrant Scan")
+            return []
         
         if not self.alpha_analyzer:
-            self.alpha_analyzer = AlphaQuadrantAnalyzer(self.market_data, self.config, logger)
+            self.alpha_analyzer = AlphaQuadrantAnalyzer(self.data_feed, self.config, logger)
 
         opportunities = self.alpha_analyzer.scan(self.pairs)
         
@@ -229,6 +226,10 @@ class QBot:
             if health['overall_health'] != 'healthy':
                 logger.warning("Volatility Slowdown: Doubling cycle time")
                 await asyncio.sleep(self.cross_exchange_cycle) # Simple slowdown
+
+        # Track rejection reasons for dashboard intelligence
+        rejection_reasons = {}
+        top_opportunity = None
 
         # GNN ARBITRAGE DETECTION (Step 3 Premium)
         all_books = {}  # Collect for GNN
@@ -397,7 +398,13 @@ class QBot:
                     if trade_value <= 0:
                         # LOG: Why can't we trade?
                         if max_buy_quote > 0 and max_sell_quote_equiv <= 0:
-                            logger.debug(f"⚠️ {pair} {buy_ex}→{sell_ex}: Can't arb - No {base_currency} on {sell_ex} to sell (Need pre-positioned capital)")
+                             msg = f"No {base_currency} on {sell_ex} to sell"
+                             logger.debug(f"⚠️ {pair} {buy_ex}→{sell_ex}: Can't arb - {msg}")
+                             if msg not in rejection_reasons: rejection_reasons[msg] = 0
+                             rejection_reasons[msg] += 1
+                        elif max_buy_quote <= 0:
+                             # Just no capital on buy side
+                             pass
                         continue
                         
                     # Apply Max Trade Limit (USD)
@@ -424,6 +431,12 @@ class QBot:
                     # LOG: Show arb calculation for visibility
                     if net_profit_pct > Decimal('0.001'):  # Only log if >0.1% potential
                         logger.info(f"📈 ARB SCAN {pair}: Buy@{buy_ex}=${buy_price:.2f} Sell@{sell_ex}=${sell_price:.2f} | Profit: {net_profit_pct*100:.3f}% (Threshold: {threshold*100:.2f}%)")
+                    else:
+                        # Log low profit reasons occasionally? No, spams logs.
+                        # Track for dashboard
+                        reason = "Low Profit"
+                        if reason not in rejection_reasons: rejection_reasons[reason] = 0
+                        rejection_reasons[reason] += 1
                     
                     if net_profit_pct >= threshold:
                         # Sophisticated Scoring
@@ -438,6 +451,9 @@ class QBot:
                                 scored_opp = self.arbitrage_analyzer.score_opportunity(opp_data, context)
                                 if scored_opp['analysis_score'] < 0.6:
                                     logger.warning(f"Sophisticated logic rejected {pair}: score {scored_opp['analysis_score']}")
+                                    reason = f"Low Score ({scored_opp['analysis_score']:.2f})"
+                                    if reason not in rejection_reasons: rejection_reasons[reason] = 0
+                                    rejection_reasons[reason] += 1
                                     continue
                                 if scored_opp['is_aggressive']:
                                     logger.info(f"🚀 AGGRESSIVE MODE for {pair} (Wyckoff/Whale signal)")
@@ -559,6 +575,19 @@ class QBot:
         
         # Summary log for visibility
         logger.info(f"🔍 Cross-Ex Scan: {len(self.pairs)} pairs, {len(opportunities)} opportunities found")
+        
+        # Save Audit Trail for Dashboard
+        if hasattr(self, 'persistence_manager'):
+             best_opp = sorted(opportunities, key=lambda x: x['net_profit_pct'], reverse=True)[0] if opportunities else None
+             audit_data = {
+                 'scan_type': 'CROSS',
+                 'pairs_scanned': len(self.pairs),
+                 'opportunities_found': len(opportunities),
+                 'top_opportunity': best_opp,
+                 'rejection_reason': rejection_reasons
+             }
+             self.persistence_manager.save_scan_audit(audit_data)
+             
         return opportunities
 
     async def scan_triangular(self, exchange_name: str, capital: Decimal) -> List[Dict]:

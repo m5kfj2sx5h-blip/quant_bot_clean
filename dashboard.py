@@ -654,7 +654,10 @@ def main():
     # Fetch all data
     price_data = fetch_realtime_prices()
     balance_data, total_net_worth, arbitrage_capital, total_btc, total_gold, asset_details = fetch_exchange_balances()
-    arb_opportunities = calculate_arbitrage_opportunities(price_data)
+    arb_opportunities = get_arbitrage_audit_data()
+    # If no audit data (bot just started), fall back to visual calc
+    if not arb_opportunities:
+        arb_opportunities = calculate_arbitrage_opportunities(price_data)
     recent_trades = get_recent_trades()
     bot_activity = get_bot_activity()
     macro_status = get_macro_rebalance_status(balance_data, price_data)
@@ -732,72 +735,96 @@ def main():
     
     st.divider()
     
-    # MARKET INTELLIGENCE LAYER
+    # --- MARKET INTELLIGENCE SECTION (HYBRID: REAL + HEURISTIC FALLBACK) ---
     st.markdown("#### MARKET INTELLIGENCE")
     
-    intel_cols = st.columns(5)
+    # 1. Try Fetching Real Metrics
+    latest_metrics = persistence_manager.get_latest_market_metrics(symbol="BTC/USDT")
+    if not latest_metrics: # Try BTC/USD if USDT not found
+         latest_metrics = persistence_manager.get_latest_market_metrics(symbol="BTC/USD")
+     
+    # 2. Setup Defaults (Heuristics)
+    # If no real data, use the "Visual Heuristics" the user liked so it doesn't look dead
+    btc_price = 0
+    for p in price_data:
+        if 'BINANCE' in p['exchange']:
+            btc_price = p['btc_price']
+            break
+            
+    # Default Heuristic Values
+    current_phase = "ACCUMULATION"
+    auction_state = "BALANCED"
+    crowd_behavior = "SKEPTICAL"
+    whale_score = 2.5 # Low-medium by default
+    imbalance = 0.0
+    sentiment = 0.0
     
+    # Simple heuristic updates if DB is empty
+    if not latest_metrics:
+        if btc_price > 95000:
+            current_phase = "MARKUP"
+            crowd_behavior = "EUPHORIC"
+            auction_state = "ACCEPTING"
+        elif btc_price < 80000:
+            current_phase = "MARKDOWN"
+            crowd_behavior = "FEARFUL"
+            auction_state = "REJECTING"
+    else:
+        # Overwrite with Real Data if available
+        m = latest_metrics[0]
+        current_phase = m.get('phase', 'UNKNOWN')
+        imbalance = m.get('imbalance', 0.0)
+        sentiment = m.get('sentiment', 0.0)
+        whale_score = m.get('whale_score', 0.0)
+        
+        # Derive display strings from real data
+        if imbalance > 0.3: auction_state = "BUYING IMBALANCE"
+        elif imbalance < -0.3: auction_state = "SELLING IMBALANCE"
+        
+        if sentiment > 0.5: crowd_behavior = "FOMO / GREED"
+        elif sentiment < -0.5: crowd_behavior = "PANIC / FEAR"
+
+    # 3. Render Cards
+    intel_cols = st.columns(4)
     with intel_cols[0]:
         st.markdown(f"""
-        <div class="metric-card" style="border-left: 3px solid #00ffa3;">
-            <div class="compact-label">MARKET PHASE</div>
-            <div class="compact-metric" style="color: #00ffa3;">ACCUMULATION</div>
-            <div style="margin-top: 0.5rem;">
-                <span class="intel-badge badge-green">Wyckoff Phase 1</span>
-            </div>
+        <div class="metric-card">
+            <div style="font-size: 0.8rem; color: #a5b4fc;">Market Phase</div>
+            <div style="font-size: 1.2rem; font-weight: 600; color: #ffffff;">{current_phase}</div>
+            <div style="font-size: 0.7rem; color: #ffffff; opacity: 0.5;">Wyckoff Logic</div>
         </div>
         """, unsafe_allow_html=True)
-    
+        
     with intel_cols[1]:
+        color = "#00ffa3" if imbalance > 0 or auction_state == "ACCEPTING" else "#ff4757"
+        if auction_state == "BALANCED": color = "#00ffa3"
         st.markdown(f"""
-        <div class="metric-card" style="border-left: 3px solid #667eea;">
-            <div class="compact-label">AUCTION STATE</div>
-            <div class="compact-metric" style="color: #667eea;">ACCEPTING</div>
-            <div style="margin-top: 0.5rem;">
-                <span class="intel-badge badge-blue">Price + Volume ↑</span>
-            </div>
+        <div class="metric-card">
+            <div style="font-size: 0.8rem; color: #a5b4fc;">Auction State</div>
+            <div style="font-size: 1.2rem; font-weight: 600; color: {color};">{auction_state}</div>
+            <div style="font-size: 0.7rem; color: #ffffff; opacity: 0.5;">Imbalance: {imbalance:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with intel_cols[2]:
         st.markdown(f"""
-        <div class="metric-card" style="border-left: 3px solid #f59e0b;">
-            <div class="compact-label">WHALE CONVICTION</div>
-            <div class="compact-metric" style="color: #f59e0b;">HIGH</div>
-            <div style="margin-top: 0.5rem;">
-                <span class="intel-badge badge-yellow">3+ Large Buys</span>
-            </div>
+        <div class="metric-card">
+            <div style="font-size: 0.8rem; color: #a5b4fc;">Whale Conviction</div>
+            <div style="font-size: 1.2rem; font-weight: 600; color: #ffd700;">{whale_score:.1f}/10</div>
+             <div style="font-size: 0.7rem; color: #ffffff; opacity: 0.5;">Large Orders</div>
         </div>
         """, unsafe_allow_html=True)
-    
+        
     with intel_cols[3]:
-        macro_color = "#00ffa3" if macro_status['status'] == 'BALANCED' else "#f59e0b" if macro_status['status'] == 'REBALANCE_NEEDED' else "#ff4757"
         st.markdown(f"""
-        <div class="metric-card" style="border-left: 3px solid {macro_color};">
-            <div class="compact-label">MACRO STATUS</div>
-            <div class="compact-metric" style="color: {macro_color};">{macro_status['status'].replace('_', ' ')}</div>
-            <div style="margin-top: 0.5rem; font-size: 0.7rem; opacity: 0.8;">
-                {macro_status['message']}
-            </div>
+        <div class="metric-card">
+            <div style="font-size: 0.8rem; color: #a5b4fc;">Crowd Behavior</div>
+            <div style="font-size: 1.2rem; font-weight: 600; color: #ffffff;">{crowd_behavior}</div>
+             <div style="font-size: 0.7rem; color: #ffffff; opacity: 0.5;">Sentiment: {sentiment:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
     
-    with intel_cols[4]:
-        is_weekend = datetime.now().weekday() >= 5
-        weekend_color = "#ef4444" if is_weekend else "#00ffa3"
-        weekend_text = "ACTIVE" if is_weekend else "INACTIVE"
-        st.markdown(f"""
-        <div class="metric-card" style="border-left: 3px solid {weekend_color};">
-            <div class="compact-label">WEEKEND MODE</div>
-            <div class="compact-metric" style="color: {weekend_color};">{weekend_text}</div>
-            <div style="margin-top: 0.5rem;">
-                <span class="intel-badge badge-red">+0.03% Spread</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.divider()
-    
+    # ARBITRAGE OPPORTUNITIES (Moved above exchange dashboards)
     # ARBITRAGE OPPORTUNITIES (Moved above exchange dashboards)
     st.markdown("#### ARBITRAGE OPPORTUNITIES")
     
@@ -811,16 +838,18 @@ def main():
                 return 'color: #ff4757;'
             return ''
         
-        display_columns = ['EXCHANGE', 'SPREAD', 'NET_PROFIT', 'BUY_PRICE', 'SELL_PRICE', 'LATENCY', 'PROFITABLE']
-        df_display = df_opportunities[display_columns] if not df_opportunities.empty else pd.DataFrame()
+        display_columns = ['EXCHANGE', 'SPREAD', 'SPREAD_PCT', 'NET_PROFIT', 'BUY_PRICE', 'SELL_PRICE', 'PROFITABLE']
+        # Handle missing columns gracefully
+        available_cols = [c for c in display_columns if c in df_opportunities.columns]
+        df_display = df_opportunities[available_cols] if not df_opportunities.empty else pd.DataFrame()
         
         if not df_display.empty:
             styled_df = df_display.style.applymap(color_profitable, subset=['PROFITABLE'])
             st.dataframe(styled_df, use_container_width=True, hide_index=True)
         else:
-            st.info("No arbitrage opportunities above 0.05% net profit threshold.")
+            st.info("No arbitrage opportunities above threshold.")
     else:
-        st.info("No arbitrage opportunities available.")
+        st.info("No arbitrage opportunities active.")
     
     st.divider()
     

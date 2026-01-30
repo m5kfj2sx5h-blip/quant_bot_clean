@@ -1,4 +1,9 @@
 ## Agent Instructions
+Review official docs:  
+- https://github.com/coinbase/coinbase-advanced-py/  
+- https://docs.kraken.com/api/docs/guides/global-intro  
+- https://docs.binance.us/#introduction  
+
 
 This file is mirrored across CLAUDE.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.
 
