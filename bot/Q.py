@@ -152,14 +152,30 @@ class QBot:
         return Decimal(str(self.config.get('risk', {}).get('max_trade_usd', 500)))
 
     def _fetch_pairs(self):
-        self.pairs = []
-        for exchange in self.exchanges.values():
+        """Fetch ONLY pairs that exist on MULTIPLE exchanges (arbitrage candidates)."""
+        # Collect pairs per exchange
+        exchange_pairs = {}
+        for ex_name, exchange in self.exchanges.items():
             markets = exchange.get_supported_pairs()
-            for symbol in markets:
-                pair = str(symbol)
-                if pair not in self.pairs:
-                    self.pairs.append(pair)
-        logger.info(f"Fetched arbitrage pairs from APIs: {self.pairs}")
+            exchange_pairs[ex_name] = set(str(symbol) for symbol in markets)
+        
+        # Find COMMON pairs (exist on at least 2 exchanges)
+        all_pairs = set()
+        for pairs in exchange_pairs.values():
+            all_pairs.update(pairs)
+        
+        self.pairs = []
+        for pair in all_pairs:
+            # Count how many exchanges have this pair
+            count = sum(1 for ex_pairs in exchange_pairs.values() if pair in ex_pairs)
+            if count >= 2:  # Only arbitrageable if on 2+ exchanges
+                self.pairs.append(pair)
+        
+        # Prioritize high-volume pairs
+        priority = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BTC/USD', 'ETH/USD', 'SOL/USD']
+        self.pairs = sorted(self.pairs, key=lambda p: (p not in priority, p))
+        
+        logger.info(f"🚀 Fetched {len(self.pairs)} COMMON pairs for arbitrage (from {len(all_pairs)} total)")
 
     def get_profit_threshold(self, pair: str = None, exchange: str = None) -> Decimal:
         """
@@ -191,7 +207,11 @@ class QBot:
         return Decimal(str(ex_config.get('taker_fee', 0.001)))
 
     async def scan_cross_exchange(self, allocated_capital: Dict[str, Decimal]) -> List[Dict]:
-        self._fetch_pairs()  # Refresh dynamic
+        # Only refresh pairs occasionally (not every scan!)
+        if not self.pairs or not hasattr(self, '_pairs_fetched_at') or (datetime.now() - self._pairs_fetched_at).seconds > 300:
+            self._fetch_pairs()
+            self._pairs_fetched_at = datetime.now()
+        
         opportunities = []
         
         # Volatility slowdown: double cycle time if market is stressed
@@ -528,6 +548,8 @@ class QBot:
             except Exception as e:
                 logger.debug(f"GNN detection error: {e}")
         
+        # Summary log for visibility
+        logger.info(f"🔍 Cross-Ex Scan: {len(self.pairs)} pairs, {len(opportunities)} opportunities found")
         return opportunities
 
     async def scan_triangular(self, exchange_name: str, capital: Decimal) -> List[Dict]:
