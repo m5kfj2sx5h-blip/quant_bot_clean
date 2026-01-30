@@ -242,13 +242,26 @@ class QBot:
                     # Instant Registry Lookup (VRAM Model)
                     book = self.market_registry.get_order_book(ex_name, pair) if self.market_registry else exchange.get_order_book(pair)
                     
+                    
                     # MARKET DATA AGGREGATION: Feed the machine
                     if book and self.config.get('MARKET_DATA_ENABLED', True):
-                         # Lazy init if not exists (or do in __init__)
-                         if not hasattr(self, 'market_data'):
-                             from manager.market_data import MarketData
-                             self.market_data = MarketData()
-                         self.market_data.update(pair, book)
+                         # Use INJECTED DataFeed as aggregator (DI Fix)
+                         if self.data_feed:
+                             # Calculate metrics using DataFeed's aggregator logic
+                             # and update context via update_market_context
+                             bids = book.get('bids', [])
+                             asks = book.get('asks', [])
+                             best_bid = Decimal(str(bids[0][0])) if bids else 0
+                             best_ask = Decimal(str(asks[0][0])) if asks else 0
+                             last_price = (best_bid + best_ask) / 2
+                             
+                             self.data_feed.update_market_context(
+                                symbol=pair, 
+                                exchange=ex_name, 
+                                bids=bids, 
+                                asks=asks, 
+                                last_price=last_price
+                             )
 
                     # ROBUST RAW DATA PARSING (No standardization overhead)
                     bids, asks = None, None
@@ -478,10 +491,28 @@ class QBot:
                         )
                         
                         if ctx.auction_state == AuctionState.IMBALANCED_SELLING:
-                             logger.warning(f"Auction Filter: Skipping {pair} due to heavy selling pressure on target {sell_ex} (Score: {ctx.auction_imbalance_score:.2f})")
-                             continue
-                        
-                        # B. Liquidity Analyzer Sizing (VWAP)
+                             # ELASTIC RESPONSE LOGIC (Small Account Friendly)
+                             # Instead of rejecting, we De-Risk.
+                             # If selling pressure is high, we demand more profit buffer and take smaller size.
+                             
+                             imbalance_severity = abs(ctx.auction_imbalance_score) # 0.3 to 1.0
+                             risk_scalar = Decimal('1.0') + Decimal(str(imbalance_severity))
+                             
+                             # 1. Demand higher profit (e.g. 1.0% -> 1.5%)
+                             min_profit_req = self.config.get('risk', {}).get('min_spread_pct', 0.006) * float(risk_scalar)
+                             
+                             if net_profit_pct < min_profit_req:
+                                  logger.debug(f"Elastic Filter: De-risking {pair}. Profit {net_profit_pct*100:.2f}% < Adjusted Req {min_profit_req*100:.2f}%")
+                                  continue
+                                  
+                             # 2. Reduce Size (e.g. $100 -> $50)
+                             safety_factor = Decimal('0.5') / risk_scalar # Stronger imbalance = smaller size
+                             original_trade = trade_value
+                             trade_value = trade_value * safety_factor
+                             
+                             logger.info(f"🛡️ Elastic De-Risk: {pair} Imbalance {imbalance_severity:.2f}. "
+                                         f"ReqProfit: {min_profit_req*100:.2f}%. "
+                                         f"Size Scaled: ${original_trade:.0f} -> ${trade_value:.0f}")                    # B. Liquidity Analyzer Sizing (VWAP)
                         # 1. Parse full books for analysis - Handle MULTIPLE formats!
                         def parse_book_entry(entry):
                             if isinstance(entry, (list, tuple)):
@@ -558,8 +589,8 @@ class QBot:
                     from manager.gnn_detector import GNNArbitrageDetector
                     self.gnn_detector = GNNArbitrageDetector()
                 
-                market_data = getattr(self, 'market_data', None)
-                gnn_cycles = self.gnn_detector.detect(all_books, market_data)
+                # Pass DataFeed (which implements aggregator interface)
+                gnn_cycles = self.gnn_detector.detect(all_books, self.data_feed)
                 
                 for cycle in gnn_cycles:
                     opportunities.append({
@@ -620,9 +651,8 @@ class QBot:
                     # 3. Detect cycles on this specific exchange
                     # Construct input format: {exchange_name: {pair: book}}
                     gnn_input = {exchange_name: all_ex_books}
-                    market_data = getattr(self, 'market_data', None)
                     
-                    cycles = self.gnn_detector.detect(gnn_input, market_data, max_length=3)
+                    cycles = self.gnn_detector.detect(gnn_input, self.data_feed, max_length=3)
                     
                     for cycle in cycles:
                         if len(cycle['path']) != 3: continue

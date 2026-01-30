@@ -27,26 +27,49 @@ class AuctionContextModule:
             if bid_vol + ask_vol > 0:
                 context.auction_imbalance_score = (bid_vol - ask_vol) / (bid_vol + ask_vol)
 
-            # Determine auction state
+            # Determines dynamic threshold based on approx Volume in USD
+            # Small Account / Low Liq Tweak:
+            # If volume is low (<$50k visible), a single whale order shouldn't trigger Panic Mode.
+            # We relax the threshold from 0.3 to 0.6 for thin books.
+            
+            total_vol = bid_vol + ask_vol
+            # Estimate Price from last_price or mid
+            current_price = last_price if last_price > 0 else (Decimal(bids[0][0]) if bids else Decimal('1'))
+            book_value_usd = total_vol * current_price
+            
+            # Dynamic Calibration for Small Account Bot
+            base_threshold = Decimal('0.3')
+            
+            if book_value_usd < Decimal('10000'): # <$10k visible - Very Thin
+                dynamic_threshold = Decimal('0.65') # Very loose
+            elif book_value_usd < Decimal('50000'): # <$50k - Thin
+                dynamic_threshold = Decimal('0.50') # Loose
+            elif book_value_usd > Decimal('1000000'): # >$1M - Deep (BTC/ETH main)
+                dynamic_threshold = Decimal('0.25') # Tight/Standard
+            else:
+                dynamic_threshold = base_threshold
+
+            # Determine auction state using DYNAMIC threshold
             abs_score = abs(context.auction_imbalance_score)
 
             if abs_score < 0.1:
                 context.auction_state = AuctionState.BALANCED
-            elif context.auction_imbalance_score > 0.3:
+            elif context.auction_imbalance_score > dynamic_threshold:
                 context.auction_state = AuctionState.IMBALANCED_BUYING
                 context.crowd_behavior = "aggressive_buying"
-            elif context.auction_imbalance_score < -0.3:
+            elif context.auction_imbalance_score < -dynamic_threshold:
                 context.auction_state = AuctionState.IMBALANCED_SELLING
                 context.crowd_behavior = "aggressive_selling"
-            elif 0.1 <= abs_score <= 0.3:
+            elif 0.1 <= abs_score <= dynamic_threshold:
                 # Check price acceptance
                 best_bid = Decimal(str(bids[0][0])) if bids[0] else 0
                 best_ask = Decimal(str(asks[0][0])) if asks[0] else 0
 
                 if best_bid and best_ask:
                     mid_price = (best_bid + best_ask) / Decimal('2')
-
-                    if abs(Decimal(str(last_price)) - mid_price) / mid_price < 0.001:
+                    
+                    # Also relax acceptance criteria slightly for small accounts/noise
+                    if abs(Decimal(str(last_price)) - mid_price) / mid_price < 0.002:
                         context.auction_state = AuctionState.ACCEPTING
                         context.crowd_behavior = "accepting_prices"
                     elif last_price > best_ask and context.auction_imbalance_score < 0:
@@ -65,12 +88,10 @@ class AuctionContextModule:
                 context.key_resistance = Decimal(str(asks[0][0])) * Decimal('1.005') if asks[0][0] else None
 
             # Calculate volume strength (simplified)
-            total_vol = bid_vol + ask_vol
             context.volume_strength = float(min(total_vol / Decimal('100.0'), Decimal('1.0')))  # Normalized
 
-            self.logger.debug(f"Auction Analysis: {context.auction_state.value} "
-                              f"Score: {context.auction_imbalance_score:.3f} "
-                              f"Confidence: {context.execution_confidence:.2f}")
+            self.logger.debug(f"Auction Analysis ({book_value_usd:,.0f}$): {context.auction_state.value} "
+                              f"Score: {context.auction_imbalance_score:.3f} (Thresh: {dynamic_threshold:.2f})")
 
         except Exception as e:
             self.logger.error(f"❌ Auction analysis error: {e}")

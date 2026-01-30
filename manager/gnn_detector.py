@@ -178,10 +178,28 @@ class GNNArbitrageDetector:
             return None, None
     
     def _build_node_features(self, market_data: Any, num_nodes: int) -> torch.Tensor:
-        """Build node features from MarketData metrics."""
+        """Build node features from MarketData metrics or DataFeed contexts."""
         features = torch.ones((num_nodes, 4))  # [vol, momentum, imbalance, depth]
         
-        for symbol, metrics in market_data.metrics.items():
+        # Adapter for DataFeed (which has market_contexts)
+        metrics_source = {}
+        if hasattr(market_data, 'metrics'):
+            metrics_source = market_data.metrics
+        elif hasattr(market_data, 'market_contexts'):
+            # Convert MarketContext objects to dict format expected by GNN
+            for pair, ctx in market_data.market_contexts.items():
+                metrics_source[pair] = {
+                    'volatility': getattr(ctx, 'volatility', 1.0),
+                    'momentum': getattr(ctx, 'momentum', 0.0), # Assuming momentum exists or default
+                    'imbalance': getattr(ctx, 'auction_imbalance_score', 0.0),
+                    'depth_ratio': 1.0 # DataFeed doesn't store this directly in context yet?
+                    # DataFeed has get_depth_ratio(symbol) method!
+                }
+                # If market_data is DataFeed, we can call methods
+                if hasattr(market_data, 'get_depth_ratio'):
+                     metrics_source[pair]['depth_ratio'] = market_data.get_depth_ratio(pair)
+
+        for symbol, metrics in metrics_source.items():
             if '/' in symbol:
                 base = symbol.split('/')[0]
                 if base in self.asset_to_idx:

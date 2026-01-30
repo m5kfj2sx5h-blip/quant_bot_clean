@@ -275,6 +275,15 @@ class DataFeed:
                         await self._reconnect(name)
             await asyncio.sleep(10)
 
+    async def _maintain_websocket_connections(self):
+        """Periodically check if connections are alive and reconnect if necessary."""
+        while self.running:
+            for name, ws in self.ws_connections.items():
+                if not ws.connected:
+                    self.logger.warning(f"WebSocket {name} disconnected - attempting reconnect")
+                    await self._reconnect(name)
+            await asyncio.sleep(5)
+
     async def _reconnect(self, name: str):
         if self.reconnect_attempts.get(name, 0) >= self.max_reconnect_attempts:
             self.logger.error(f"Max reconnect attempts reached for {name}")

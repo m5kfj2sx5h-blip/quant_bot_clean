@@ -629,6 +629,44 @@ def create_exchange_card(exchange_name, exchange_price, exchange_balance, fee_in
     
     return ''.join(html_parts)
 
+def get_arbitrage_audit_data():
+    """Fetch and format the latest audit data for the dashboard."""
+    audit = persistence_manager.get_latest_scan_audit()
+    if not audit:
+        return []
+        
+    opp = audit.get('top_opportunity')
+    if not opp:
+        return []
+    
+    # Map Q-Bot opportunity to Dashboard format
+    # Q-Bot: type, buy_exchange, sell_exchange, buy_price, sell_price, net_profit_pct, trade_value
+    # Dashboard: EXCHANGE, SPREAD, SPREAD_PCT, NET_PROFIT, BUY_PRICE, SELL_PRICE, LATENCY, PROFITABLE
+    
+    buy_ex = opp.get('buy_exchange', 'Unknown').split('_')[0].upper()
+    sell_ex = opp.get('sell_exchange', 'Unknown').split('_')[0].upper()
+    buy_price = float(opp.get('buy_price', 0))
+    sell_price = float(opp.get('sell_price', 0))
+    spread = sell_price - buy_price
+    
+    # Simple logos or text
+    direction = f"{buy_ex} → {sell_ex}"
+    
+    net_profit_pct = float(opp.get('net_profit_pct', 0))
+    trade_value = float(opp.get('trade_value', 0))
+    net_profit_usd = (net_profit_pct / 100) * trade_value
+    
+    return [{
+        'EXCHANGE': direction,
+        'SPREAD': f"${spread:.2f}",
+        'SPREAD_PCT': f"{net_profit_pct:.2f}",
+        'NET_PROFIT': f"${net_profit_usd:.2f}",
+        'BUY_PRICE': f"${buy_price:.2f}",
+        'SELL_PRICE': f"${sell_price:.2f}",
+        'LATENCY': "AUDITED",
+        'PROFITABLE': 'YES'
+    }]
+
 def main():
     st.set_page_config(
         page_title="Quant Trading Dashboard",
