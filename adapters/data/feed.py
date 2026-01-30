@@ -187,22 +187,22 @@ class DataFeed:
                 continue
             try:
                 if name == 'binanceus':
-                    binance_ws = BinanceUSWebSocket("btcusdt")
+                    binance_ws = BinanceUSWebSocket(["btcusdt"])
                     await binance_ws.connect()
                     binance_ws.subscribe(self._handle_websocket_data)
                     self.ws_connections['binanceus'] = binance_ws
                 elif name == 'kraken':
-                    kraken_ws = KrakenWebSocket("XBT/USD")
+                    kraken_ws = KrakenWebSocket(["XBT/USD"])
                     await kraken_ws.connect()
                     kraken_ws.subscribe(self._handle_websocket_data)
                     self.ws_connections['kraken'] = kraken_ws
                 elif name == 'coinbase':
-                    coinbase_ws = CoinbaseWebSocket("BTC-USD")
+                    coinbase_ws = CoinbaseWebSocket(["BTC-USD"])
                     await coinbase_ws.connect()
                     coinbase_ws.subscribe(self._handle_websocket_data)
                     self.ws_connections['coinbase'] = coinbase_ws
                 elif name == 'coinbase_advanced':
-                    coinbase_adv_ws = CoinbaseAdvancedWebSocket("BTC-USD")
+                    coinbase_adv_ws = CoinbaseAdvancedWebSocket(["BTC-USD"])
                     await coinbase_adv_ws.connect()
                     coinbase_adv_ws.subscribe(self._handle_websocket_data)
                     self.ws_connections['coinbase_advanced'] = coinbase_adv_ws

@@ -206,7 +206,7 @@ class CoinbaseWebSocket:
     async def connect(self):
         try:
             ssl_context = ssl.create_default_context(cafile=certifi.where())
-            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context, max_size=10*1024*1024)
             self.logger.info(f"✅ Coinbase WebSocket connected")
             subscribe_msg = {
                 "type": "subscribe",
@@ -302,7 +302,7 @@ class CoinbaseAdvancedWebSocket:
     async def connect(self):
         try:
             ssl_context = ssl.create_default_context(cafile=certifi.where())
-            self.ws = await websockets.connect(self.uri, ssl=ssl_context)
+            self.ws = await websockets.connect(self.uri, ssl=ssl_context, max_size=10*1024*1024)
             self.logger.info(f"✅ Coinbase Advanced WebSocket connected")
             subscribe_msg = {
                 "type": "subscribe",

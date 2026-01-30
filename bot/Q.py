@@ -209,13 +209,8 @@ class QBot:
             self._fetch_pairs()
             self._pairs_fetched_at = datetime.now()
             
-            # FIX: Ensure DataFeed subscribes to these pairs (Multi-Pair Fix)
-            if self.data_feed and hasattr(self.data_feed, 'subscribe'):
-                logger.info(f"📡 Updating DataFeed subscriptions for {len(self.pairs)} pairs")
-                if asyncio.iscoroutinefunction(self.data_feed.subscribe):
-                    await self.data_feed.subscribe(self.pairs)
-                else:
-                    self.data_feed.subscribe(self.pairs)
+            # Pairs fetched. DataFeed subscription is handled internally by adapters/data/feed.py logic.
+            # No manual subscription needed here.
         
         logger.info(f"🔄 Scanning {len(self.pairs)} pairs for arbitrage...")
         opportunities = []
