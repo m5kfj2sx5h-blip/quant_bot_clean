@@ -4,7 +4,7 @@ from typing import Dict
 from dotenv import load_dotenv
 import time
 
-load_dotenv('config/.env')
+load_dotenv('../config/.env')
 
 logger = logging.getLogger(__name__)
 

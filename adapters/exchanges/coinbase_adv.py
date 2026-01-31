@@ -1,12 +1,12 @@
 from coinbase.rest import RESTClient as CoinbaseAdvancedClient
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from values import Price, Amount
-from entities import Symbol
+from domain.values import Price, Amount
+from domain.entities import Symbol
 from dotenv import load_dotenv
 import os
 
-load_dotenv('config/.env')
+load_dotenv('../../config/.env')
 
 class CoinbaseAdvancedAdapter:
     def _parse_pem_key(self, pem_key: str) -> str:

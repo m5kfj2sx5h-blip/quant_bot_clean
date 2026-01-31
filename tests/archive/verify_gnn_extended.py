@@ -26,7 +26,7 @@ sys.modules['utils.logger'].get_logger = MagicMock(return_value=mock_logger)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 # Import GNN Detector (which will mock internally if actual import fails)
-from gnn_detector import GNNArbitrageDetector
+from core.gnn_detector import GNNArbitrageDetector
 
 class TestGNNExtension(unittest.TestCase):
     def setUp(self):
@@ -41,7 +41,7 @@ class TestGNNExtension(unittest.TestCase):
         
         # Patch the MODULE level flag where it is defined
         with patch('manager.gnn_detector.GNN_AVAILABLE', True):
-            from conversion import ConversionManager
+            from manager.conversion import ConversionManager
             
             cm = ConversionManager(config={'USE_GNN': True})
             # Inject mock detector

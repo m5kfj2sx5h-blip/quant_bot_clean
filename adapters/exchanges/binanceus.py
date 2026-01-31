@@ -1,12 +1,12 @@
 from binance.spot import Spot as BinanceSpot
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from entities import Symbol
-from values import Price, Amount
+from domain.entities import Symbol
+from domain.values import Price, Amount
 from dotenv import load_dotenv
 import os
 
-load_dotenv('config/.env')
+load_dotenv('../../config/.env')
 
 class BinanceUSAdapter:
     def __init__(self):

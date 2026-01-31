@@ -1,8 +1,8 @@
 import logging
 from decimal import Decimal
 from typing import Dict, Tuple
-from entities import TradingThresholds, ArbitrageOpportunity
-from aggregates import Portfolio
+from domain.entities import TradingThresholds, ArbitrageOpportunity
+from domain.aggregates import Portfolio
 
 logger = logging.getLogger(__name__)
 

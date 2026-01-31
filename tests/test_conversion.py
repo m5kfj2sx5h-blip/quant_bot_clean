@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, '/Users/dj3bosmacbookpro/Desktop/quant_bot_FIXED')
 
 from decimal import Decimal
-from conversion import ConversionManager
+from manager.conversion import ConversionManager
 
 def test_triangular_profit_calculation():
     """

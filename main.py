@@ -9,25 +9,25 @@ from dotenv import load_dotenv
 
 load_dotenv('config/.env')
 
-from feed import DataFeed
-from scanner import ArbitrageAnalyzer
-from health_monitor import HealthMonitor
-from Q import QBot
-from A import ABot
-from G import GBot
-from fee import FeeManager
-from money import MoneyManager
-from mode import ModeManager
-from signals import SignalServer
-from staking import StakingManager
-from transfer import TransferManager
-from registry import MarketRegistry, RegistryWorker
-from persistence import PersistenceManager
-from risk import RiskManager
+from adapters.data.feed import DataFeed
+from core.scanner import ArbitrageAnalyzer
+from core.health_monitor import HealthMonitor
+from bot.Q import QBot
+from bot.A import ABot
+from bot.G import GBot
+from manager.fee import FeeManager
+from manager.money import MoneyManager
+from manager.mode import ModeManager
+from core.signals import SignalServer
+from manager.staking import StakingManager
+from manager.transfer import TransferManager
+from core.registry import MarketRegistry, RegistryWorker
+from persistence.persistence import PersistenceManager
+from manager.risk import RiskManager
 from utils.logger import get_logger
 
-from aggregates import Portfolio
-from entities import TradingMode
+from domain.aggregates import Portfolio
+from domain.entities import TradingMode
 
 logger = get_logger(__name__)
 
@@ -58,10 +58,10 @@ class SystemCoordinator:
             return json.load(f)
 
     async def initialize(self):
-        from binanceus import BinanceUSAdapter
-        from kraken import KrakenAdapter
-        from coinbase_reg import CoinbaseRegularAdapter
-        from coinbase_adv import CoinbaseAdvancedAdapter
+        from adapters.exchanges.binanceus import BinanceUSAdapter
+        from adapters.exchanges.kraken import KrakenAdapter
+        from adapters.exchanges.coinbase_reg import CoinbaseRegularAdapter
+        from adapters.exchanges.coinbase_adv import CoinbaseAdvancedAdapter
 
         # 1. Restore Portfolio & Mode state from SQLite
         last_state = self.persistence_manager.load_last_state()

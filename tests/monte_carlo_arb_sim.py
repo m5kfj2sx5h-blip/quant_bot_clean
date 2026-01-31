@@ -14,8 +14,8 @@ sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger.return_value = logging.getLogger('mock')
 
 # Import Core Logic
-from liquidity import LiquidityAnalyzer
-from auction import AuctionContextModule
+from core.liquidity import LiquidityAnalyzer
+from core.auction import AuctionContextModule
 
 # We will mock SentimentAnalyzer
 

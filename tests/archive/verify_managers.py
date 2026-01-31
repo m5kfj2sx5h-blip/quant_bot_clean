@@ -19,7 +19,7 @@ logger = logging.getLogger("VerifyManagers")
 def test_money_manager():
     print("\n=== MONEY MANAGER ===")
     try:
-        from money import MoneyManager
+        from manager.money import MoneyManager
         
         # Mock dependencies
         mock_config = {'DRIFT_THRESHOLD_CRITICAL': '0.85', 'SMALL_ACCOUNT_MODE': True}
@@ -44,7 +44,7 @@ def test_money_manager():
 def test_order_executor():
     print("\n=== ORDER EXECUTOR ===")
     try:
-        from order_executor import OrderExecutor
+        from core.order_executor import OrderExecutor
         
         # Check _wait_for_fill method exists
         if hasattr(OrderExecutor, '_wait_for_fill'):
@@ -58,7 +58,7 @@ def test_order_executor():
 def test_conversion_manager():
     print("\n=== CONVERSION MANAGER ===")
     try:
-        from conversion import ConversionManager
+        from manager.conversion import ConversionManager
         
         cm = ConversionManager()
         
@@ -75,7 +75,7 @@ def test_conversion_manager():
 def test_transfer_manager():
     print("\n=== TRANSFER MANAGER ===")
     try:
-        from transfer import TransferManager
+        from manager.transfer import TransferManager
         
         # Check get_lowest_fee_estimate exists
         if hasattr(TransferManager, 'get_lowest_fee_estimate'):

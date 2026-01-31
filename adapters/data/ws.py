@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from typing import List, Callable
 import os
 
-load_dotenv('config/.env')
+load_dotenv('../../config/.env')
 
 # HIGH-PRIORITY pairs for arbitrage (common across exchanges)
 PRIORITY_PAIRS = [

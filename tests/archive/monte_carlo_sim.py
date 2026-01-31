@@ -16,7 +16,7 @@ sys.path.append(os.getcwd())
 sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger.return_value = logging.getLogger('mock')
 
-from scanner import AlphaQuadrantAnalyzer
+from core.scanner import AlphaQuadrantAnalyzer
 from manager.market_data import MarketData
 
 # Configure logging

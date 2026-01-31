@@ -5,11 +5,11 @@ import statistics
 from decimal import Decimal
 from typing import Dict, List, Callable, Any
 from ws import BinanceUSWebSocket, KrakenWebSocket, CoinbaseWebSocket, CoinbaseAdvancedWebSocket
-from scanner import MarketContext, AuctionState, MarketPhase
-from auction import AuctionContextModule
+from core.scanner import MarketContext, AuctionState, MarketPhase
+from core.auction import AuctionContextModule
 from dotenv import load_dotenv
 
-load_dotenv('config/.env')
+load_dotenv('../../config/.env')
 
 logger = logging.getLogger(__name__)
 

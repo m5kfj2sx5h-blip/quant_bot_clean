@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd())
-from liquidity import LiquidityAnalyzer
+from core.liquidity import LiquidityAnalyzer
 
 class TestLiquidityAnalyzer(unittest.TestCase):
     def setUp(self):

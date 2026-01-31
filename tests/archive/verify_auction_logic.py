@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd())
-from auction import AuctionContextModule, AuctionState, MarketContext
+from core.auction import AuctionContextModule, AuctionState, MarketContext
 
 class TestAuctionLogic(unittest.TestCase):
     def setUp(self):

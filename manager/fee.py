@@ -1,12 +1,12 @@
 import logging
 from decimal import Decimal
 from typing import Dict
-from entities import Symbol, FeeStructure
-from registry import MarketRegistry
+from domain.entities import Symbol, FeeStructure
+from core.registry import MarketRegistry
 from dotenv import load_dotenv
 import time
 
-load_dotenv('config/.env')
+load_dotenv('../config/.env')
 
 logger = logging.getLogger(__name__)
 

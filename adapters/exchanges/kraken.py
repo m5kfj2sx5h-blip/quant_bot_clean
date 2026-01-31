@@ -1,12 +1,12 @@
 from kraken.spot import SpotClient as KrakenSpot, User as KrakenUser, Market as KrakenMarket
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from entities import Symbol
-from values import Price, Amount
+from domain.entities import Symbol
+from domain.values import Price, Amount
 from dotenv import load_dotenv
 import os
 
-load_dotenv('config/.env')
+load_dotenv('../../config/.env')
 
 class KrakenAdapter:
     def __init__(self, config: Dict = None):

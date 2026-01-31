@@ -28,8 +28,8 @@ from typing import Dict, Callable, List, Any
 from decimal import Decimal
 import os
 
-from aggregates import ExchangeHealth, Portfolio
-from entities import TradingThresholds
+from domain.aggregates import ExchangeHealth, Portfolio
+from domain.entities import TradingThresholds
 
 logger = logging.getLogger(__name__)
 

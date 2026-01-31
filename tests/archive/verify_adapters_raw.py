@@ -11,9 +11,9 @@ sys.modules['domain.entities'] = MagicMock()
 sys.modules['domain.values'] = MagicMock()
 sys.modules['dotenv'] = MagicMock()
 
-from binanceus import BinanceUSAdapter
-from kraken import KrakenAdapter
-from coinbase_adv import CoinbaseAdvancedAdapter
+from adapters.exchanges.binanceus import BinanceUSAdapter
+from adapters.exchanges.kraken import KrakenAdapter
+from adapters.exchanges.coinbase_adv import CoinbaseAdvancedAdapter
 
 class TestRawAdapters(unittest.TestCase):
     def test_binance_raw(self):

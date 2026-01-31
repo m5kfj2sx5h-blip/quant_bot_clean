@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from entities import TradingMode, MacroSignal
+from domain.entities import TradingMode, MacroSignal
 from typing import Optional, Any
 from dotenv import load_dotenv
 
-load_dotenv('config/.env')
+load_dotenv('../config/.env')
 
 logger = logging.getLogger(__name__)
 

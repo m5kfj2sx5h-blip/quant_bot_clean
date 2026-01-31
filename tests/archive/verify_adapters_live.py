@@ -17,7 +17,7 @@ logger = logging.getLogger("VerifyAdapters")
 def test_binanceus():
     print("\n=== BINANCEUS ADAPTER ===")
     try:
-        from binanceus import BinanceUSAdapter
+        from adapters.exchanges.binanceus import BinanceUSAdapter
         adapter = BinanceUSAdapter()
         
         # 1. Order Book
@@ -50,7 +50,7 @@ def test_binanceus():
 def test_kraken():
     print("\n=== KRAKEN ADAPTER ===")
     try:
-        from kraken import KrakenAdapter
+        from adapters.exchanges.kraken import KrakenAdapter
         adapter = KrakenAdapter()
         
         book = adapter.get_order_book('XXBTZUSD') # Kraken symbol
@@ -76,7 +76,7 @@ def test_kraken():
 def test_coinbase():
     print("\n=== COINBASE ADAPTER ===")
     try:
-        from coinbase_adv import CoinbaseAdvancedAdapter
+        from adapters.exchanges.coinbase_adv import CoinbaseAdvancedAdapter
         adapter = CoinbaseAdvancedAdapter()
         
         book = adapter.get_order_book('BTC-USD')

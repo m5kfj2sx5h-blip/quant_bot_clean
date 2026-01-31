@@ -22,13 +22,14 @@ sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger = MagicMock(return_value=mock_logger)
 
 # Patch GNN_AVAILABLE before import
-import gnn_detector as gnn_module
+from core import gnn_detector as gnn_module
+
 gnn_module.GNN_AVAILABLE = False  # Disable actual torch for testing
 gnn_module.logger = mock_logger
 
 
 
-from gnn_detector import GNNArbitrageDetector
+from core.gnn_detector import GNNArbitrageDetector
 
 
 class TestGNNDetector(unittest.TestCase):

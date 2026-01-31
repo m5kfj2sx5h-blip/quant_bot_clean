@@ -7,7 +7,7 @@ from decimal import Decimal
 from datetime import datetime
 from dotenv import load_dotenv
 from persistence import PersistenceManager
-from aggregates import Portfolio
+from domain.aggregates import Portfolio
 
 load_dotenv('config/.env')
 
