@@ -1,4 +1,4 @@
-# quant_bot_clean - _FIXED Branch is the only branch to fovus on!
+# quant_bot_clean - _FIXED Branch is the only branch to focus on!
 
 _FIXED is still not working properly, it is not connected together properly. 
 
