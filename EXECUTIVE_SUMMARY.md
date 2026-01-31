@@ -66,20 +66,20 @@ USDT → BTC → ETH → USDT
 
 ### Question 1: Which pairs for triangular?
 
-**Option A (Conservative)**: BTC, ETH only
-- 6-8 paths total
-- Highest liquidity
-- Lowest slippage
+~~**Option A (Conservative)**: BTC, ETH only~~
+~~- 6-8 paths total~~
+~~- Highest liquidity~~
+- ~~Lowest slippage~~
 
 **Option B (Moderate)**: BTC, ETH, SOL
 - 12-15 paths
 - Good liquidity
 - Per improvements.md recommendation
 
-**Option C (Aggressive)**: BTC, ETH, SOL, AVAX, MATIC
-- 20+ paths
-- Higher slippage risk
-- More opportunities
+~~**Option C (Aggressive)**: BTC, ETH, SOL, AVAX, MATIC~~
+~~- 20+ paths~~
+~~- Higher slippage risk~~
+~~- More opportunities~~
 
 **Recommendation**: Option B (BTC/ETH/SOL)
 
@@ -142,8 +142,8 @@ Current: 10% of total portfolio per trade (per improvements.md)
 5. `EXECUTIVE_SUMMARY.md` - This file
 
 ### Code Files
-6. `conversion_fixed.py` - Proper Decimal usage (but needs path fix)
-7. `tests/test_conversion_fixed.py` - Unit tests (all pass)
+6. `conversion.py` - Proper Decimal usage (but needs path fix)
+7. `tests/test_conversion.py` - Unit tests (all pass)
 
 ---
 
@@ -179,27 +179,3 @@ Current: 10% of total portfolio per trade (per improvements.md)
 | Conversion Manager | Broken path logic | ❌ No - needs rewrite |
 
 **You can run the bot NOW** for cross-exchange arbitrage. Triangular arbitrage needs the fix above.
-
----
-
-## 💡 My Recommendation
-
-**Proceed with conversion manager fix** because:
-
-1. Per improvements.md: Triangular is PRIMARY strategy for small accounts
-2. No transfer fees = higher profit margin
-3. Faster execution = less risk
-4. 4 hours to fix vs weeks of manual rebalancing
-
-**Conservative approach**:
-- Start with BTC/ETH only (6 paths)
-- Use 0.5% min profit threshold (extra safety)
-- Max 5% position size initially
-- Monitor first 20 trades closely
-- Scale up if successful
-
----
-
-**Awaiting your decision on how to proceed.**
-
-All documentation is ready for implementation once you approve the approach.

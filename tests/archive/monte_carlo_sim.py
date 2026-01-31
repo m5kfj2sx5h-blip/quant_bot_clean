@@ -1,14 +1,13 @@
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict
 import logging
 import sys
 import os
-import random
 
 # Fix path to import modules
 sys.path.append(os.getcwd())
@@ -17,7 +16,7 @@ sys.path.append(os.getcwd())
 sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger.return_value = logging.getLogger('mock')
 
-from manager.scanner import AlphaQuadrantAnalyzer, ArbitrageAnalyzer, MarketContext
+from scanner import AlphaQuadrantAnalyzer
 from manager.market_data import MarketData
 
 # Configure logging

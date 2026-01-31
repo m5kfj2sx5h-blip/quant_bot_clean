@@ -1,12 +1,10 @@
 from coinbase.rest import RESTClient as CoinbaseAdvancedClient
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from domain.values import Price, Amount
-from domain.entities import Symbol
+from values import Price, Amount
+from entities import Symbol
 from dotenv import load_dotenv
 import os
-import base64
-import re
 
 load_dotenv('config/.env')
 

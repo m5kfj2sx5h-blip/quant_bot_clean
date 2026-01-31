@@ -5,7 +5,6 @@ Tests that each adapter returns standardized data structures.
 import sys
 import os
 import logging
-from decimal import Decimal
 
 sys.path.append(os.getcwd())
 
@@ -18,7 +17,7 @@ logger = logging.getLogger("VerifyAdapters")
 def test_binanceus():
     print("\n=== BINANCEUS ADAPTER ===")
     try:
-        from adapters.exchanges.binanceus import BinanceUSAdapter
+        from binanceus import BinanceUSAdapter
         adapter = BinanceUSAdapter()
         
         # 1. Order Book
@@ -51,7 +50,7 @@ def test_binanceus():
 def test_kraken():
     print("\n=== KRAKEN ADAPTER ===")
     try:
-        from adapters.exchanges.kraken import KrakenAdapter
+        from kraken import KrakenAdapter
         adapter = KrakenAdapter()
         
         book = adapter.get_order_book('XXBTZUSD') # Kraken symbol
@@ -77,7 +76,7 @@ def test_kraken():
 def test_coinbase():
     print("\n=== COINBASE ADAPTER ===")
     try:
-        from adapters.exchanges.coinbase_adv import CoinbaseAdvancedAdapter
+        from coinbase_adv import CoinbaseAdvancedAdapter
         adapter = CoinbaseAdvancedAdapter()
         
         book = adapter.get_order_book('BTC-USD')

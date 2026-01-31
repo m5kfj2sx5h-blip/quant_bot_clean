@@ -1,19 +1,15 @@
 import logging
 import asyncio
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime
 from dotenv import load_dotenv
-from core.profit import calculate_net_profit
-from core.auction import AuctionContextModule, AuctionState
-from core.health_monitor import HealthMonitor
-from core.health_monitor import HealthMonitor
-from core.order_executor import OrderExecutor
-from core.liquidity import LiquidityAnalyzer
-from manager.scanner import MarketContext, AlphaQuadrantAnalyzer
-from core.liquidity import LiquidityAnalyzer
-from manager.scanner import MarketContext, AlphaQuadrantAnalyzer
-from manager.sentiment import SentimentAnalyzer
+from profit import calculate_net_profit
+from auction import AuctionContextModule, AuctionState
+from order_executor import OrderExecutor
+from liquidity import LiquidityAnalyzer
+from scanner import MarketContext, AlphaQuadrantAnalyzer
+from sentiment import SentimentAnalyzer
 
 load_dotenv('config/.env')
 
@@ -581,7 +577,7 @@ class QBot:
         if self.config.get('USE_GNN', False) and all_books:
             try:
                 if not hasattr(self, 'gnn_detector'):
-                    from manager.gnn_detector import GNNArbitrageDetector
+                    from gnn_detector import GNNArbitrageDetector
                     self.gnn_detector = GNNArbitrageDetector()
                 
                 # Pass DataFeed (which implements aggregator interface)
@@ -640,7 +636,7 @@ class QBot:
                 if all_ex_books:
                     # 2. Lazy init GNN if needed
                     if not hasattr(self, 'gnn_detector'):
-                        from manager.gnn_detector import GNNArbitrageDetector
+                        from gnn_detector import GNNArbitrageDetector
                         self.gnn_detector = GNNArbitrageDetector()
                     
                     # 3. Detect cycles on this specific exchange

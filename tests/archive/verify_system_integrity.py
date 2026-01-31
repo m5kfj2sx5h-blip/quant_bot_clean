@@ -3,7 +3,6 @@ import asyncio
 import logging
 import sys
 import os
-from datetime import datetime
 from decimal import Decimal
 
 # Setup paths
@@ -31,7 +30,7 @@ async def test_system_integrity():
 
     # 2. DataFeed Initialization (The Component that Failed)
     try:
-        from adapters.data.feed import DataFeed
+        from feed import DataFeed
         feed = DataFeed(config, logger)
         if not hasattr(feed, '_maintain_websocket_connections'):
              errors.append("❌ DataFeed missing _maintain_websocket_connections method!")
@@ -42,9 +41,9 @@ async def test_system_integrity():
 
     # 3. Manager Initialization
     try:
-        from manager.risk import RiskManager
-        from manager.scanner import AlphaQuadrantAnalyzer
-        from manager.gnn_detector import GNNArbitrageDetector
+        from risk import RiskManager
+        from scanner import AlphaQuadrantAnalyzer
+        from gnn_detector import GNNArbitrageDetector
         
         # Mock Dependencies
         class MockPortfolio:
@@ -63,9 +62,9 @@ async def test_system_integrity():
 
     # 4. Bot Initialization
     try:
-        from bot.Q import QBot
-        from bot.A import ABot
-        from bot.G import GBot
+        from Q import QBot
+        from A import ABot
+        from G import GBot
         
         # Mock Exchanges
         exchanges = {'binanceus': None} 

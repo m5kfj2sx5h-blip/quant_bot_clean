@@ -4,11 +4,10 @@ import time
 import statistics
 from decimal import Decimal
 from typing import Dict, List, Callable, Any
-from adapters.data.ws import BinanceUSWebSocket, KrakenWebSocket, CoinbaseWebSocket, CoinbaseAdvancedWebSocket
-from manager.scanner import MarketContext, AuctionState, MarketPhase
-from core.auction import AuctionContextModule
+from ws import BinanceUSWebSocket, KrakenWebSocket, CoinbaseWebSocket, CoinbaseAdvancedWebSocket
+from scanner import MarketContext, AuctionState, MarketPhase
+from auction import AuctionContextModule
 from dotenv import load_dotenv
-import os
 
 load_dotenv('config/.env')
 

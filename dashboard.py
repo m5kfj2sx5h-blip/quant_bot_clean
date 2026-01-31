@@ -1,17 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
-import os
 import json
 import time
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
-import numpy as np
-from manager.persistence import PersistenceManager
-from domain.aggregates import Portfolio
-from domain.entities import TradingMode
+from persistence import PersistenceManager
+from aggregates import Portfolio
 
 load_dotenv('config/.env')
 

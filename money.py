@@ -1,10 +1,8 @@
-import logging
 from decimal import Decimal
 from typing import Dict
-from datetime import datetime
-from manager.conversion import ConversionManager
-from manager.mode import ModeManager
-from manager.transfer import TransferManager
+from conversion import ConversionManager
+from mode import ModeManager
+from transfer import TransferManager
 from utils.logger import get_logger
 from dotenv import load_dotenv
 import time
@@ -50,7 +48,7 @@ class MoneyManager:
             self.portfolio.exchange_balances = {}
             total_portfolio_value = Decimal('0')
             
-            from domain.entities import Balance
+            from entities import Balance
             for ex_name, balance in balances.items():
                 self.portfolio.exchange_balances[ex_name] = {}
                 for currency, amount in balance.items():
@@ -83,7 +81,7 @@ class MoneyManager:
         # Config reload (mock dynamic reload)
         self._load_config()
         
-        from domain.entities import Balance
+        from entities import Balance
         balances = self._fetch_balances()
         total_values = {}
         total_portfolio_value = Decimal('0.0')

@@ -15,7 +15,7 @@
 #### Phase 2: Conversion Manager Investigation (✅ ANALYZED)
 - Read improvements.md directives
 - Verified Registry order book structure
-- Created conversion_fixed.py with proper Decimal usage
+- Created conversion.py with proper Decimal usage
 - Built unit tests - all pass (3/3)
 - **Discovery**: Formula is correct BUT path logic is fundamentally broken
 
@@ -48,8 +48,8 @@ Permutation `['ETH/USDT', 'ETH/BTC', 'BTC/USDT']` is syntactically valid but sem
 2. `CONVERSION_MANAGER_REWRITE.md` - Initial analysis plan
 3. `TRIANGULAR_PATH_ANALYSIS.md` - Bug root cause
 4. `CONVERSION_FIX_STRATEGY.md` - Implementation plan
-5. `conversion_fixed.py` - Fixed Decimal usage (but wrong paths)
-6. `tests/test_conversion_fixed.py` - Unit tests (all pass, but test bad paths)
+5. `conversion.py` - Fixed Decimal usage (but wrong paths)
+6. `tests/test_conversion.py` - Unit tests (all pass, but test bad paths)
 7. `STATUS_REPORT.md` - This file
 
 ### Current State

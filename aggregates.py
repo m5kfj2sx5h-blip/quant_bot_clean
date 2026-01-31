@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta, timezone
 
-from domain.entities import Symbol, Balance, Order, TradingMode, MacroSignal
+from entities import Symbol, Balance, Order, TradingMode, MacroSignal
 
 
 @dataclass

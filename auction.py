@@ -1,10 +1,9 @@
 """
 Auction-Context Module – limit-chaser & auction-theory logic
 """
-import math
 import logging
 from typing import List, Tuple
-from manager.scanner import MarketContext, AuctionState
+from scanner import MarketContext, AuctionState
 from decimal import Decimal
 
 class AuctionContextModule:

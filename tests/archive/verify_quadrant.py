@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 
-from manager.scanner import AlphaQuadrantAnalyzer
+from scanner import AlphaQuadrantAnalyzer
 
 class TestAlphaQuadrant(unittest.TestCase):
     def setUp(self):

@@ -1,8 +1,8 @@
 from kraken.spot import SpotClient as KrakenSpot, User as KrakenUser, Market as KrakenMarket
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from domain.entities import Symbol
-from domain.values import Price, Amount
+from entities import Symbol
+from values import Price, Amount
 from dotenv import load_dotenv
 import os
 

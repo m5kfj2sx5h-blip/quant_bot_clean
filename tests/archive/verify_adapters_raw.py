@@ -2,7 +2,6 @@
 import unittest
 from unittest.mock import MagicMock
 import sys
-from decimal import Decimal
 
 # Mock dependencies
 sys.modules['binance.spot'] = MagicMock()
@@ -12,9 +11,9 @@ sys.modules['domain.entities'] = MagicMock()
 sys.modules['domain.values'] = MagicMock()
 sys.modules['dotenv'] = MagicMock()
 
-from adapters.exchanges.binanceus import BinanceUSAdapter
-from adapters.exchanges.kraken import KrakenAdapter
-from adapters.exchanges.coinbase_adv import CoinbaseAdvancedAdapter
+from binanceus import BinanceUSAdapter
+from kraken import KrakenAdapter
+from coinbase_adv import CoinbaseAdvancedAdapter
 
 class TestRawAdapters(unittest.TestCase):
     def test_binance_raw(self):

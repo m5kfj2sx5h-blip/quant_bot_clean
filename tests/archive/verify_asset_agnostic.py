@@ -10,9 +10,9 @@ sys.modules['utils.logger'] = MagicMock()
 sys.modules['pandas'] = MagicMock()
 sys.modules['core.health_monitor'] = MagicMock()
 
-from bot.Q import QBot
-from bot.A import ABot
-from bot.G import GBot
+from Q import QBot
+from A import ABot
+from G import GBot
 
 class TestAssetAgnostic(unittest.TestCase):
     def test_free_capital_calculation(self):

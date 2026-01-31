@@ -4,7 +4,7 @@ import asyncio
 from typing import Dict, Optional
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN
-from core.profit import calculate_net_profit, estimate_slippage
+from profit import calculate_net_profit
 from dotenv import load_dotenv
 
 load_dotenv('config/.env')

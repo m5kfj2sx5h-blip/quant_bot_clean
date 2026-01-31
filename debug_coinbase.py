@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from adapters.data.ws import CoinbaseWebSocket, CoinbaseAdvancedWebSocket
+from ws import CoinbaseWebSocket, CoinbaseAdvancedWebSocket
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("CoinbaseDiag")

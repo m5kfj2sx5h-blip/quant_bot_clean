@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from collections import deque
 import numpy as np
 from dataclasses import dataclass
@@ -47,8 +47,6 @@ class MacroSignal:
         if self.indicators is None:
             self.indicators = {}
 
-
-from domain.entities import ArbitrageOpportunity
 
 class ArbitrageAnalyzer:
     """

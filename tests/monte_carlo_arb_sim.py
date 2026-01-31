@@ -1,12 +1,9 @@
-import unittest
 from unittest.mock import MagicMock
 import numpy as np
-import pandas as pd
 from decimal import Decimal
 import logging
 import sys
 import os
-import random
 from datetime import datetime
 
 # Fix path to import modules
@@ -17,8 +14,9 @@ sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger.return_value = logging.getLogger('mock')
 
 # Import Core Logic
-from core.liquidity import LiquidityAnalyzer
-from core.auction import AuctionContextModule, AuctionState
+from liquidity import LiquidityAnalyzer
+from auction import AuctionContextModule
+
 # We will mock SentimentAnalyzer
 
 # Configure logging

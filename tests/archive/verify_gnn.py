@@ -3,7 +3,7 @@ Verification Test for GNN Arbitrage Detector (Step 3)
 Tests graph building, cycle detection, and profit calculation.
 """
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import sys
 from decimal import Decimal
 
@@ -22,13 +22,13 @@ sys.modules['utils.logger'] = MagicMock()
 sys.modules['utils.logger'].get_logger = MagicMock(return_value=mock_logger)
 
 # Patch GNN_AVAILABLE before import
-import manager.gnn_detector as gnn_module
+import gnn_detector as gnn_module
 gnn_module.GNN_AVAILABLE = False  # Disable actual torch for testing
 gnn_module.logger = mock_logger
 
 
 
-from manager.gnn_detector import GNNArbitrageDetector
+from gnn_detector import GNNArbitrageDetector
 
 
 class TestGNNDetector(unittest.TestCase):

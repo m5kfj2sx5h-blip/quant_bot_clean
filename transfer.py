@@ -1,8 +1,8 @@
 from utils.logger import get_logger
 from decimal import Decimal
 import os
-from core.health_monitor import HealthMonitor
-from manager.registry import MarketRegistry
+from health_monitor import HealthMonitor
+from registry import MarketRegistry
 from dotenv import load_dotenv
 
 load_dotenv('config/.env')

@@ -1,8 +1,7 @@
-import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from domain.entities import TradingMode, MacroSignal
+from entities import TradingMode, MacroSignal
 from typing import Optional, Any
 from dotenv import load_dotenv
 
